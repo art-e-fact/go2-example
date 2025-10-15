@@ -33,6 +33,7 @@ members = ["temp/simulation"]
 
 [dependency-groups]
 dev = [
+    "pytest>=8.4.2",
     "rerun-sdk>=0.23.1",
     "ruff>=0.14.0",
 ]

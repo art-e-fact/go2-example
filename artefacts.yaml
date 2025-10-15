@@ -1,0 +1,22 @@
+project: artefacts/go2-isaac-example
+version: 0.1.0
+
+jobs:
+  default:
+    type: test
+    package:
+      docker:
+        build:
+          dockerfile: empty
+    runtime:
+      framework: other
+      simulator: isaac_sim
+    scenarios:
+      defaults:
+        params:
+          difficulty: [0.5, 0.9, 3.0]
+
+      settings:
+        - name: scenario1
+          run: "rm -rf outputs/artefacts && pytest tests/ --junit-xml=outputs/artefacts/tests_junit.xml -s"
+          output_dirs: ["outputs/artefacts"]
