@@ -1,0 +1,36 @@
+# Isaac Sim - Unitree Go2 example
+
+## Prerequisites
+- [`uv` package manager](https://docs.astral.sh/uv/getting-started/installation/)
+- Isaac Sim 5.0 compatible [hardware](https://docs.isaacsim.omniverse.nvidia.com/latest/installation/requirements.html) and [driver](https://docs.omniverse.nvidia.com/dev-guide/latest/common/technical-requirements.html)
+
+## Setup
+
+```sh
+# install dependencies (and create virtual environment)
+uv sync --dev
+
+# Install this project
+uv pip install -e .
+```
+
+## Usage
+```sh
+# To see all options
+uv run -m simulation --help
+
+# Control Robot with arrows and z/x
+uv run python -m simulation --scene generated_rails
+
+# Execute waypoint mission automatically
+uv run python -m simulation --scene generated_pyramid --use-auto-pilot
+```
+
+## Testing
+```sh
+# Execute tests configured with Artefacts
+uv run artefacts run waypoints
+
+# Run test with pytest
+uv run pytest
+```
