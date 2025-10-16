@@ -10,10 +10,11 @@ import omni.usd
 from isaacsim import SimulationApp
 from isaacsim.core.api import World
 from isaacsim.core.utils import stage as stage_utils
-from pxr import Gf, Sdf, UsdGeom
 from omni.isaac.core.utils.prims import get_prim_at_path
+from pxr import Gf, Sdf, UsdGeom
 
-from simulation.rtf_calculator import RtfCalculator
+from simulation.auto_pilot import AutoPilot
+from simulation.camera_manager import CameraManager
 from simulation.devices.gamepad import Se2Gamepad
 from simulation.devices.keyboard import Se2Keyboard
 from simulation.environments.pyramid import create_stepped_pyramid
@@ -22,11 +23,10 @@ from simulation.follow_camera import FollowCamera
 from simulation.go2_robot import Go2Policy
 from simulation.input_listener import InputListener
 from simulation.rerun_logger import RerunLogger
+from simulation.rtf_calculator import RtfCalculator
 from simulation.scene_config import Scene
 from simulation.steady_rate import SteadyRate
 from simulation.waypoint_mission import WaypointMission
-from simulation.auto_pilot import AutoPilot
-from simulation.video_writer import VideoWriter
 
 SCENE_ROOT = "/Scene"
 
@@ -178,7 +178,6 @@ class EnvironmentRunner:
             Scene.hospital_staircase,
             Scene.stone_stairs,
             Scene.rail_blocks,
-            # Scene.obstacle_park,
             Scene.excavator,
         ]
         self.simulation_app = simulation_app
@@ -234,19 +233,12 @@ class EnvironmentRunner:
         self.follow_camera = FollowCamera(target_prim_path=self.robot_path)
         self.follow_camera.initialize()
 
+        self.camera_manager = CameraManager()
+
         self.initialize_scene()
 
         self.world.add_physics_callback(
             "physics_step", callback_fn=self.on_physics_step
-        )
-
-        self.video_writer = VideoWriter(
-            output_path="outputs/artefacts/go2_simulation_vw.mp4",
-            width=270,
-            height=180,
-            framerate=20,
-            camera_path="/World/Go2/Head_upper/camera",
-            codec='libx264'
         )
 
     def initialize_scene(self):
@@ -294,6 +286,9 @@ class EnvironmentRunner:
 
         if self.use_auto_pilot:
             self.auto_pilot = AutoPilot(self.waypoint_mission)
+
+        self.camera_manager.initialize()
+        self.camera_manager.link_waypoint_mission(self.waypoint_mission)
 
     def load_next_scene(self):
         print("Loading next scene...")
@@ -365,7 +360,7 @@ class EnvironmentRunner:
             if self.use_rerun:
                 self.rerun_logger.log()
             
-            self.video_writer.capture_frame()
+            self.camera_manager.capture_frames()
 
             if self.world.is_playing():
                 # Use the device that has input
@@ -379,7 +374,7 @@ class EnvironmentRunner:
             # Prevent the RTF from going above 1.0 (faster than real-time)
             # self.steady_rate.sleep()
 
-        self.video_writer.close()
+        self.camera_manager.close()
         print("VIdeo saved to go2_simulation.mp4")
         self.simulation_app.close()
 

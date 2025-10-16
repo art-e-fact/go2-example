@@ -1,4 +1,5 @@
 .venv
+.vscode
 outputs/
 __pycache__/
 *.egg

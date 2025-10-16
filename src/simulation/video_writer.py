@@ -7,8 +7,8 @@ import isaacsim.core.utils.numpy.rotations as rot_utils
 class VideoWriter:
     """Simple class to write RGB frames from Isaac camera to a video file."""
 
-    def __init__(self, output_path: str | Path, width=270, height=180, framerate=20,
-                 camera_path="/World/Go2/Head_upper/camera", codec='libx264'):
+    def __init__(self, camera: Camera, output_path: str | Path, width=270, height=180, framerate=20,
+                 codec='libx264'):
         """Initialize video writer with Isaac camera.
         
         Args:
@@ -37,20 +37,7 @@ class VideoWriter:
         self.stream.height = height
         self.stream.max_b_frames = 0  # Disable B-frames for lower latency
         
-        # Initialize Isaac camera
-        self.camera = Camera(
-            prim_path=camera_path,
-            translation=np.array([0.04, 0.0, 0.021]),
-            frequency=framerate,
-            resolution=(width, height),
-            orientation=rot_utils.euler_angles_to_quats(
-                np.array([0, 0, 0]), degrees=True
-            ),
-        )
-        
-        # Configure camera properties
-        self.camera.set_focal_length(3.0)
-        self.camera.set_clipping_range(0.01, 1000000000.0)
+        self.camera = camera
         
         # Frame counter
         self.frame_count = 0

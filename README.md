@@ -19,7 +19,7 @@ uv pip install -e .
 # To see all options
 uv run -m simulation --help
 
-# Control Robot with arrows and z/x
+# Control Robot with arrow keys + z/x or gamepad
 uv run python -m simulation --scene generated_rails
 
 # Execute waypoint mission automatically
@@ -33,4 +33,10 @@ uv run artefacts run waypoints
 
 # Run test with pytest
 uv run pytest
+```
+
+## Development
+```sh
+# Setup isaacsim typehints in VS Code
+uv run -m isaacsim --generate-vscode-settings
 ```
