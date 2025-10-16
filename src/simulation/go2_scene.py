@@ -101,7 +101,7 @@ def add_assets_to_world(scene: Scene, difficulty: float = 1.0) -> DemoSceneConfi
             step_height=0.08 * difficulty,
         )
     elif scene == Scene.hospital_staircase:
-        add_reference("../../third_party/go2-isaac-assets/jouer/jouer.usda")
+        add_reference("../../assets/jouer/jouer.usda")
         config.follow_camera_location = (-0.26, -5.46, 1.31)
         # config.robot_position = (
         #     (1.395613665286304, 0, 0),
@@ -118,14 +118,14 @@ def add_assets_to_world(scene: Scene, difficulty: float = 1.0) -> DemoSceneConfi
             (0.7108333798924511, 0, 0, 0.7033604382041077),
         )
     elif scene == Scene.rail_blocks:
-        add_reference("../../third_party/go2-isaac-assets/rail_blocks/rail_blocks.usd")
+        add_reference("../../assets/rail_blocks/rail_blocks.usd")
         config.robot_position = (
             (-9.160084778124597, 3.7498660414059666, -4.440892098500626e-16),
             (0.9777604847551223, 0, 0, -0.2097246634314338),
         )
     elif scene == Scene.stone_stairs:
         add_reference(
-            "../../third_party/go2-isaac-assets/stone_stairs/stone_stairs_f.usd"
+            "../../assets/stone_stairs/stone_stairs_f.usd"
         )
         config.follow_camera_location = (
             1.922574758064275,
@@ -133,7 +133,7 @@ def add_assets_to_world(scene: Scene, difficulty: float = 1.0) -> DemoSceneConfi
             1.701546649598252,
         )
     elif scene == Scene.excavator:
-        add_reference("../../third_party/go2-isaac-assets/excavator_scan/excavator.usd")
+        add_reference("../../assets/excavator_scan/excavator.usd")
         config.follow_camera_location = (
             2.345979532852949,
             2.4994179277846036,
@@ -145,7 +145,7 @@ def add_assets_to_world(scene: Scene, difficulty: float = 1.0) -> DemoSceneConfi
         )
     elif scene == Scene.obstacle_park:
         add_reference(
-            "../../third_party/go2-isaac-assets/obstacle_park/obstacle_park.usd"
+            "../../assets/obstacle_park/obstacle_park.usd"
         )
         config.follow_camera_location = (
             131.3663488182028,
