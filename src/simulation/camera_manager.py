@@ -1,11 +1,14 @@
+from pathlib import Path
 from typing import Optional
 from isaacsim.sensors.camera import Camera
 from isaacsim.core.prims import SingleXFormPrim
 from simulation.waypoint_mission import WaypointMission, WaypointStatus
 import numpy as np
 import isaacsim.core.utils.numpy.rotations as rot_utils
+from PIL import Image
 
 from simulation.video_writer import VideoWriter
+import omni 
 
 WAYPOINT_COLOR_MAP = {
     WaypointStatus.INACTIVE: (255, 255, 0),
@@ -45,7 +48,7 @@ class CameraManager:
         self.head_camera.set_focal_length(3.0)
         self.head_camera.set_clipping_range(0.01, 1000000000.0)
 
-        # Topdown camera
+        # Topdown camera (only used to taka a picture of the whole scene)
         self.topdown_center = np.array([0.0, 0.0])
         self.topdown_box_size = 100.0
         self.topdown_cam_res = 1200
@@ -60,19 +63,14 @@ class CameraManager:
             np.array([0.0, 0.0, 5.0]), [1, 0, 0, 0], camera_axes="usd"
         )
         self.topdown_camera.set_projection_mode("orthographic")
+        self.topdown_wait_frames = 15
+        self.topdown_image_countdown = 0
 
         self.head_video_writer = VideoWriter(
             camera=self.head_camera,
             output_path="outputs/artefacts/head_camera.mp4",
             width=self.head_camera_width,
             height=self.head_camera_height,
-            framerate=self.framerate,
-        )
-        self.topdown_video_writer = VideoWriter(
-            camera=self.topdown_camera,
-            output_path="outputs/artefacts/topdown_camera.mp4",
-            width=self.topdown_cam_res,
-            height=self.topdown_cam_res,
             framerate=self.framerate,
         )
         self.follow_cameara = Camera("/World/camera")
@@ -83,6 +81,7 @@ class CameraManager:
             height=720 // 4,
             framerate=self.framerate,
         )
+        self.topdown_snapshot_path = Path("outputs/artefacts/topdown_camera.png")
 
     def calibrate_topdown_projection(self):
         waypoints = [wp.get_position()[0][:2] for wp in self.waypoint_mission.waypoints]
@@ -112,8 +111,9 @@ class CameraManager:
         self.head_camera.initialize()
         self.topdown_camera.initialize()
         self.head_video_writer.initialize()
-        self.topdown_video_writer.initialize()
 
+        # Reset the topdown image countdown
+        self.topdown_image_countdown = self.topdown_wait_frames
 
     def link_waypoint_mission(self, waypoint_mission: WaypointMission):
         self.waypoint_mission = waypoint_mission
@@ -121,8 +121,42 @@ class CameraManager:
 
     def capture_frames(self):
         self.head_video_writer.capture_frame()
-        self.topdown_video_writer.capture_frame()
         self.follow_video_writer.capture_frame()
+        self.capture_topdown_snapshot()
+
+    def capture_topdown_snapshot(self):
+        """Waits untils the topdown camera is ready and captures a single snapshot."""
+
+        # If countdown is zero, we have already taken the snapshot
+        if self.topdown_image_countdown <= 0:
+            return
+
+        # Enable the topdown camera to take a shot for the map
+        self.topdown_camera._render_product.hydra_texture.set_updates_enabled(True)
+
+        # Use camera lighting
+        action_registry = omni.kit.actions.core.get_action_registry()
+        action = action_registry.get_action(
+            "omni.kit.viewport.menubar.lighting", "set_lighting_mode_camera"
+        )
+        action.execute()
+
+        rgb = get_camera_rgb(self.topdown_camera)
+        if rgb is not None:
+            self.topdown_image_countdown -= 1
+
+            if self.topdown_image_countdown == 0:
+                # Save the image
+                img = Image.fromarray(rgb)
+                img.save(self.topdown_snapshot_path)
+
+                # Switch to stage lighting
+                action = action_registry.get_action(
+                    "omni.kit.viewport.menubar.lighting", "set_lighting_mode_stage"
+                )
+                action.execute()
+                # Disable further updates to the topdown camera
+                self.topdown_camera._render_product.hydra_texture.set_updates_enabled(False)
 
     def close(self):
         self.head_video_writer.close()
