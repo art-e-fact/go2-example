@@ -103,16 +103,6 @@ def add_assets_to_world(scene: Scene, difficulty: float = 1.0) -> DemoSceneConfi
     elif scene == Scene.hospital_staircase:
         add_reference("../../assets/jouer/jouer.usda")
         config.follow_camera_location = (-0.26, -5.46, 1.31)
-        # config.robot_position = (
-        #     (1.395613665286304, 0, 0),
-        #     (0.9643211746710016, 0, 0, -0.2647350979396943),
-        # )
-        # downstairs
-        # config.robot_position = (
-        #     (0.9949584836156586, -3.5635434194065314, -1.8329601710552604),
-        #     (1, 0, 0, 0),
-        # )
-        # upstairs left
         config.robot_position = (
             (-1.132995391295986, -3.9926660542312136, -1.3211653993039363e-14),
             (0.7108333798924511, 0, 0, 0.7033604382041077),
@@ -375,7 +365,7 @@ class EnvironmentRunner:
             # self.steady_rate.sleep()
 
         self.camera_manager.close()
-        print("VIdeo saved to go2_simulation.mp4")
+    
         self.simulation_app.close()
 
 

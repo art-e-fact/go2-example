@@ -37,8 +37,8 @@ def create_stepped_pyramid(
         # The vertical position of the center of the cube for this step
         level_z = (level * step_height) + (step_height / 2.0)
 
-        prim_path = pyramid_root.GetPath().AppendChild(f"Step_{level}")
-        prim = stage.DefinePrim(prim_path, "Cube")
+        cube_path = pyramid_root.GetPath().AppendChild(f"Step_{level}")
+        prim = stage.DefinePrim(cube_path, "Cube")
 
         # Set the position of the step
         UsdGeom.Xformable(prim).AddTranslateOp().Set(Gf.Vec3f(0, 0, level_z))
@@ -61,9 +61,13 @@ def create_stepped_pyramid(
         add_update_semantics(prim, "step", "class")
 
     # Add Waypoints
-    UsdGeom.Xform.Define(stage, "/Waypoint_01").AddTranslateOp().Set(Gf.Vec3f(2, 2, 0))
-    UsdGeom.Xform.Define(stage, "/Waypoint_02").AddTranslateOp().Set(
+    wp_path = pyramid_root.GetPath().AppendChild("Waypoint_01")
+    UsdGeom.Xform.Define(stage, wp_path).AddTranslateOp().Set(Gf.Vec3f(2, 2, 0))
+    wp_path = pyramid_root.GetPath().AppendChild("Waypoint_02")
+    UsdGeom.Xform.Define(stage, wp_path).AddTranslateOp().Set(
         Gf.Vec3f(position[0], position[1], level_z)
     )
-    UsdGeom.Xform.Define(stage, "/Waypoint_03").AddTranslateOp().Set(Gf.Vec3f(2, -2, 0))
-    UsdGeom.Xform.Define(stage, "/Waypoint_04").AddTranslateOp().Set(Gf.Vec3f(0, 0, 0))
+    wp_path = pyramid_root.GetPath().AppendChild("Waypoint_03")
+    UsdGeom.Xform.Define(stage, wp_path).AddTranslateOp().Set(Gf.Vec3f(2, -2, 0))
+    wp_path = pyramid_root.GetPath().AppendChild("Waypoint_04")
+    UsdGeom.Xform.Define(stage, wp_path).AddTranslateOp().Set(Gf.Vec3f(0, 0, 0))
