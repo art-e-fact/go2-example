@@ -7,7 +7,7 @@ import isaacsim.core.utils.numpy.rotations as rot_utils
 class VideoWriter:
     """Simple class to write RGB frames from Isaac camera to a video file."""
 
-    def __init__(self, camera: Camera, output_path: str | Path, width=270, height=180, framerate=20,
+    def __init__(self, camera: Camera, output_path: str | Path, framerate=20,
                  codec='libx264'):
         """Initialize video writer with Isaac camera.
         
@@ -20,8 +20,6 @@ class VideoWriter:
             codec: Video codec to use
         """
         self.output_path = Path(output_path)
-        self.width = width
-        self.height = height
         self.framerate = framerate
 
         # Ensure output directory exists
@@ -33,6 +31,7 @@ class VideoWriter:
         # Create container and stream
         self.container = av.open(output_path, 'w')
         self.stream = self.container.add_stream(codec, rate=framerate)
+        width, height = camera.get_resolution()
         self.stream.width = width
         self.stream.height = height
         self.stream.max_b_frames = 0  # Disable B-frames for lower latency
@@ -47,7 +46,8 @@ class VideoWriter:
         """Initialize the camera."""
         self.camera.initialize()
         self.is_initialized = True
-        print(f"Camera initialized at resolution {self.width}x{self.height}")
+
+    
         
     def get_camera_rgb(self):
         """Get RGB frame from the camera."""
@@ -81,11 +81,6 @@ class VideoWriter:
         """
         if rgb_frame is None:
             return
-            
-        # Ensure frame has correct dimensions
-        if rgb_frame.shape != (self.height, self.width, 3):
-            print(f"Warning: Frame has shape {rgb_frame.shape}, expected ({self.height}, {self.width}, 3)")
-            # You could resize here if needed
             
         # Convert numpy array to VideoFrame
         frame = av.VideoFrame.from_ndarray(rgb_frame, format="rgb24")

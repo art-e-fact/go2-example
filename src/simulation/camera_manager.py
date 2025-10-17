@@ -31,15 +31,13 @@ def get_camera_rgb(camera: Camera):
 
 
 class CameraManager:
-    def __init__(self):
-        self.head_camera_width = 1080 // 4
-        self.head_camera_height = 720 // 4
+    def __init__(self, follow_cameara: Camera):
         self.framerate = 20
         self.head_camera = Camera(
             prim_path="/World/Go2/Head_upper/camera",
             translation=np.array([0.04, 0.0, 0.021]),
             frequency=self.framerate,
-            resolution=(self.head_camera_width, self.head_camera_height),
+            resolution=(1080 // 4, 720 // 4),
             orientation=rot_utils.euler_angles_to_quats(
                 np.array([0, 0, 0]), degrees=True
             ),
@@ -51,13 +49,13 @@ class CameraManager:
         # Topdown camera (only used to taka a picture of the whole scene)
         self.topdown_center = np.array([0.0, 0.0])
         self.topdown_box_size = 100.0
-        self.topdown_cam_res = 1200
-        self.topdown_cam_height = 3.3
+        topdown_cam_res = 1200
+        self.topdown_cam_height = 3.3 # The height of the ceiling in the hospital scene
         self.topdown_camera = Camera(
             prim_path="/World/topdown",
             position=np.array([0.0, 0.0, 5.0]),
             frequency=self.framerate,
-            resolution=(self.topdown_cam_res, self.topdown_cam_res),
+            resolution=(topdown_cam_res, topdown_cam_res),
         )
         self.topdown_camera.set_world_pose(
             np.array([0.0, 0.0, 5.0]), [1, 0, 0, 0], camera_axes="usd"
@@ -69,16 +67,12 @@ class CameraManager:
         self.head_video_writer = VideoWriter(
             camera=self.head_camera,
             output_path="outputs/artefacts/head_camera.mp4",
-            width=self.head_camera_width,
-            height=self.head_camera_height,
             framerate=self.framerate,
         )
-        self.follow_cameara = Camera("/World/camera")
+
         self.follow_video_writer = VideoWriter(
-            camera=self.follow_cameara,
+            camera=follow_cameara,
             output_path="outputs/artefacts/follow_camera.mp4",
-            width=1080 // 4,
-            height=720 // 4,
             framerate=self.framerate,
         )
         self.topdown_snapshot_path = Path("outputs/artefacts/topdown_camera.png")
@@ -120,8 +114,10 @@ class CameraManager:
         self.calibrate_topdown_projection()
 
     def capture_frames(self):
-        self.head_video_writer.capture_frame()
-        self.follow_video_writer.capture_frame()
+        # Skip the first few frames
+        if self.topdown_image_countdown <= 0:
+            self.head_video_writer.capture_frame()
+            self.follow_video_writer.capture_frame()
         self.capture_topdown_snapshot()
 
     def capture_topdown_snapshot(self):
@@ -160,5 +156,4 @@ class CameraManager:
 
     def close(self):
         self.head_video_writer.close()
-        self.topdown_video_writer.close()
         self.follow_video_writer.close()

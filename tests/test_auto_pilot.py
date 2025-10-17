@@ -19,17 +19,18 @@ def isaac_sim_process():
         # TODO: Shouldn't this return an empty dict instead of raising?
         params = get_artefacts_params()
         difficulty = params.get("difficulty", 0.5)
+        scene = params.get("scene", "generated_pyramid")
     except Exception as _e:
         # Test is running without Artefacts
         difficulty = 0.5
-        
+        scene = "generated_pyramid"
 
     command = [
         str(python_executable),
         "-m",
         "simulation",
         "--scene",
-        "generated_pyramid",
+        scene,
         "--use-auto-pilot",
         "--difficulty",
         str(difficulty),

@@ -1,3 +1,4 @@
+import signal
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -114,9 +115,7 @@ def add_assets_to_world(scene: Scene, difficulty: float = 1.0) -> DemoSceneConfi
             (0.9777604847551223, 0, 0, -0.2097246634314338),
         )
     elif scene == Scene.stone_stairs:
-        add_reference(
-            "../../assets/stone_stairs/stone_stairs_f.usd"
-        )
+        add_reference("../../assets/stone_stairs/stone_stairs_f.usd")
         config.follow_camera_location = (
             1.922574758064275,
             -4.040539873363723,
@@ -132,19 +131,6 @@ def add_assets_to_world(scene: Scene, difficulty: float = 1.0) -> DemoSceneConfi
         config.robot_position = (
             (0, 0, 0),
             (0.45157244431278176, 0, 0, 0.892234457716905),
-        )
-    elif scene == Scene.obstacle_park:
-        add_reference(
-            "../../assets/obstacle_park/obstacle_park.usd"
-        )
-        config.follow_camera_location = (
-            131.3663488182028,
-            167.85606536189837,
-            23.809185441299782,
-        )
-        config.robot_position = (
-            (120.94353042674143, 173.70305402803177, 10.028384006099044),
-            (0.6015506847930614, 0, 0, -0.798834634717974),
         )
 
     else:
@@ -223,13 +209,21 @@ class EnvironmentRunner:
         self.follow_camera = FollowCamera(target_prim_path=self.robot_path)
         self.follow_camera.initialize()
 
-        self.camera_manager = CameraManager()
+        self.camera_manager = CameraManager(self.follow_camera.camera)
 
         self.initialize_scene()
 
         self.world.add_physics_callback(
             "physics_step", callback_fn=self.on_physics_step
         )
+        signal.signal(signal.SIGTERM, self._handle_shutdown)
+        signal.signal(signal.SIGINT, self._handle_shutdown)
+
+    def _handle_shutdown(self, signum, frame):
+        """Handle shutdown signals."""
+        print(f"Received shutdown signal: {signum}. Shutting down gracefully.")
+        # This will cause the main loop in `run()` to exit.
+        self.close()
 
     def initialize_scene(self):
         self._is_initializing = True
@@ -349,7 +343,7 @@ class EnvironmentRunner:
             self.waypoint_mission.update()
             if self.use_rerun:
                 self.rerun_logger.log()
-            
+
             self.camera_manager.capture_frames()
 
             if self.world.is_playing():
@@ -362,10 +356,15 @@ class EnvironmentRunner:
                         self.base_command = self.teleop_gamepad.advance()
 
             # Prevent the RTF from going above 1.0 (faster than real-time)
-            # self.steady_rate.sleep()
+            self.steady_rate.sleep()
+        print("Simulation app has exited main loop, cleaning up...")
+        self.close()
+        print("Environment runner cleanup complete.")
 
+        
+
+    def close(self):
         self.camera_manager.close()
-    
         self.simulation_app.close()
 
 
