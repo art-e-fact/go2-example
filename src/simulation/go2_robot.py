@@ -87,10 +87,10 @@ class Go2Policy(PolicyController):
 
         super().__init__(name, prim_path, root_path, usd_path, position, orientation)
 
-        demo_policy_path = Path(__file__).resolve().parent.parent.parent / "demo_policy"
+        policy_path = Path(__file__).resolve().parent.parent.parent / "policy"
         self.load_policy(
-            str(demo_policy_path / "policy.pt"),
-            str(demo_policy_path / "env.yaml"),
+            str(policy_path / "policy.pt"),
+            str(policy_path / "env.yaml"),
         )
         self._action_scale = 0.2
         self._previous_action = np.zeros(12)
