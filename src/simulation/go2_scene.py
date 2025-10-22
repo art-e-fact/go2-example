@@ -216,8 +216,8 @@ class EnvironmentRunner:
         self.world.add_physics_callback(
             "physics_step", callback_fn=self.on_physics_step
         )
-        signal.signal(signal.SIGTERM, self._handle_shutdown)
-        signal.signal(signal.SIGINT, self._handle_shutdown)
+        # signal.signal(signal.SIGTERM, self._handle_shutdown)
+        # signal.signal(signal.SIGINT, self._handle_shutdown)
 
     def _handle_shutdown(self, signum, frame):
         """Handle shutdown signals."""
@@ -329,38 +329,40 @@ class EnvironmentRunner:
 
     def run(self):
         while self.simulation_app.is_running():
-            self.check_if_robot_is_on_its_back()
-
-            if self._needed_reset:
-                print("Resetting environment...")
-                self._needed_reset = False
-                self.reload_scene()
-                continue
-
-            self.world.step(render=True)
-
-            self.follow_camera.update()
-            self.waypoint_mission.update()
-            if self.use_rerun:
-                self.rerun_logger.log()
-
-            self.camera_manager.capture_frames()
-
-            if self.world.is_playing():
-                # Use the device that has input
-                if self.use_auto_pilot and self.auto_pilot is not None:
-                    self.base_command = self.auto_pilot.advance()
-                else:
-                    self.base_command = self.teleop_keyboard.advance()
-                    if np.all(self.base_command == 0):
-                        self.base_command = self.teleop_gamepad.advance()
-
-            # Prevent the RTF from going above 1.0 (faster than real-time)
-            self.steady_rate.sleep()
+            self.step()
         print("Simulation app has exited main loop, cleaning up...")
         self.close()
         print("Environment runner cleanup complete.")
 
+    def step(self):
+        self.check_if_robot_is_on_its_back()
+
+        if self._needed_reset:
+            print("Resetting environment...")
+            self._needed_reset = False
+            self.reload_scene()
+            return
+
+        self.world.step(render=True)
+
+        self.follow_camera.update()
+        self.waypoint_mission.update()
+        if self.use_rerun:
+            self.rerun_logger.log()
+
+        self.camera_manager.capture_frames()
+
+        if self.world.is_playing():
+            # Use the device that has input
+            if self.use_auto_pilot and self.auto_pilot is not None:
+                self.base_command = self.auto_pilot.advance()
+            else:
+                self.base_command = self.teleop_keyboard.advance()
+                if np.all(self.base_command == 0):
+                    self.base_command = self.teleop_gamepad.advance()
+
+        # Prevent the RTF from going above 1.0 (faster than real-time)
+        self.steady_rate.sleep()
         
 
     def close(self):

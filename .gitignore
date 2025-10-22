@@ -1,6 +1,7 @@
 .venv
 .vscode
 outputs/
+out/
 __pycache__/
 *.egg
 *.egg-info

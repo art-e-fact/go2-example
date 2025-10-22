@@ -1,0 +1,19 @@
+nodes:
+  - id: talker
+    build: pip install -e .
+    path: talker/talker/main.py
+    args: --scene generated_pyramid --use-auto-pilot
+    inputs:
+      alive: tester/running
+    outputs:
+      - speech
+  - id: tester
+    build: pip install -e ./listener-1
+    path: pytest
+    args: listener-1/listener_1/main.py -s
+    inputs:
+      speech: talker/speech
+      tick: dora/timer/millis/100
+    outputs:
+      - response
+      - running

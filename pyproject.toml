@@ -13,6 +13,7 @@ dependencies = [
     "artefacts-toolkit>=0.7.1",
     "pandas>=2.3.3",
     "pygame>=2.6.1",
+    "dora-rs-cli>=0.3.13",
 ]
 
 [[tool.uv.index]]
@@ -34,6 +35,8 @@ members = ["temp/simulation"]
 [dependency-groups]
 dev = [
     "pytest>=8.4.2",
+    "pytest-asyncio>=1.2.0",
+    "pytest-timeout>=2.4.0",
     "rerun-sdk>=0.23.1",
     "ruff>=0.14.0",
 ]
