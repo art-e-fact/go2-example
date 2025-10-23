@@ -62,12 +62,10 @@ def create_stepped_pyramid(
 
     # Add Waypoints
     wp_path = pyramid_root.GetPath().AppendChild("Waypoint_01")
-    UsdGeom.Xform.Define(stage, wp_path).AddTranslateOp().Set(Gf.Vec3f(2, 2, 0))
+    UsdGeom.Xform.Define(stage, wp_path).AddTranslateOp().Set(Gf.Vec3f(0, 2, 0))
     wp_path = pyramid_root.GetPath().AppendChild("Waypoint_02")
-    UsdGeom.Xform.Define(stage, wp_path).AddTranslateOp().Set(
-        Gf.Vec3f(position[0], position[1], level_z)
-    )
+    UsdGeom.Xform.Define(stage, wp_path).AddTranslateOp().Set(Gf.Vec3f(0, 0, level_z))
     wp_path = pyramid_root.GetPath().AppendChild("Waypoint_03")
-    UsdGeom.Xform.Define(stage, wp_path).AddTranslateOp().Set(Gf.Vec3f(2, -2, 0))
+    UsdGeom.Xform.Define(stage, wp_path).AddTranslateOp().Set(Gf.Vec3f(0, -2, 0))
     wp_path = pyramid_root.GetPath().AppendChild("Waypoint_04")
-    UsdGeom.Xform.Define(stage, wp_path).AddTranslateOp().Set(Gf.Vec3f(0, 0, 0))
+    UsdGeom.Xform.Define(stage, wp_path).AddTranslateOp().Set(Gf.Vec3f(-1, 0, 0))

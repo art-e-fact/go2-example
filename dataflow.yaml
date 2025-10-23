@@ -5,12 +5,16 @@ nodes:
     args: --scene generated_pyramid --use-auto-pilot
     env:
       OMNI_KIT_ACCEPT_EULA: YES
+      OUTPUT_DIR: outputs/artefacts
     inputs:
       command_2d: navigator/command_2d
-      pub_status_tick: dora/timer/millis/500
+      pub_status_tick: dora/timer/millis/200
+      stop: tester/stop
+      load_scene: tester/load_scene
     outputs:
       - robot_pose
       - waypoints
+      - scene_info
 
   - id: navigator
     build: pip install -e ./nodes/navigator
@@ -19,16 +23,17 @@ nodes:
       tick: dora/timer/millis/100
       robot_pose: simulation/robot_pose
       waypoints: simulation/waypoints
+      stop: tester/stop
     outputs:
       - command_2d
 
-  # - id: tester
-  #   build: pip install -e ./listener-1
-  #   path: pytest
-  #   args: listener-1/listener_1/main.py -s
-  #   inputs:
-  #     speech: talker/rtf
-  #     tick: dora/timer/millis/100
-  #   outputs:
-  #     - response
-  #     - running
+  - id: tester
+    build: pip install -e nodes/tester
+    path: pytest
+    args: nodes/tester/tester/main.py --junit-xml=outputs/artefacts/tests_junit.xml -s
+    inputs:
+      waypoints: simulation/waypoints
+      scene_info: simulation/scene_info
+    outputs:
+      - stop
+      - load_scene

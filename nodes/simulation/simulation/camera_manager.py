@@ -8,7 +8,7 @@ import isaacsim.core.utils.numpy.rotations as rot_utils
 from PIL import Image
 
 from simulation.video_writer import VideoWriter
-import omni 
+import omni
 
 WAYPOINT_COLOR_MAP = {
     WaypointStatus.INACTIVE: (255, 255, 0),
@@ -31,7 +31,7 @@ def get_camera_rgb(camera: Camera):
 
 
 class CameraManager:
-    def __init__(self, follow_cameara: Camera):
+    def __init__(self, follow_camera: Camera):
         self.framerate = 20
         self.head_camera = Camera(
             prim_path="/World/Go2/Head_upper/camera",
@@ -50,7 +50,7 @@ class CameraManager:
         self.topdown_center = np.array([0.0, 0.0])
         self.topdown_box_size = 100.0
         topdown_cam_res = 1200
-        self.topdown_cam_height = 3.3 # The height of the ceiling in the hospital scene
+        self.topdown_cam_height = 3.3  # The height of the ceiling in the hospital scene
         self.topdown_camera = Camera(
             prim_path="/World/topdown",
             position=np.array([0.0, 0.0, 5.0]),
@@ -64,18 +64,27 @@ class CameraManager:
         self.topdown_wait_frames = 15
         self.topdown_image_countdown = 0
 
+        self.follow_camera = follow_camera
+
+    def start_writers(self, output_dir: Path):
         self.head_video_writer = VideoWriter(
             camera=self.head_camera,
-            output_path="outputs/artefacts/head_camera.mp4",
+            output_path=output_dir / "head_camera.mp4",
             framerate=self.framerate,
         )
 
         self.follow_video_writer = VideoWriter(
-            camera=follow_cameara,
-            output_path="outputs/artefacts/follow_camera.mp4",
+            camera=self.follow_camera,
+            output_path=output_dir / "follow_camera.mp4",
             framerate=self.framerate,
         )
-        self.topdown_snapshot_path = Path("outputs/artefacts/topdown_camera.png")
+        self.topdown_snapshot_path = output_dir / "topdown_camera.png"
+
+    def stop_writers(self):
+        if hasattr(self, "head_video_writer"):
+            self.head_video_writer.close()
+        if hasattr(self, "follow_video_writer"):
+            self.follow_video_writer.close()
 
     def calibrate_topdown_projection(self):
         waypoints = [wp.get_position()[0][:2] for wp in self.waypoint_mission.waypoints]
@@ -104,7 +113,6 @@ class CameraManager:
     def initialize(self):
         self.head_camera.initialize()
         self.topdown_camera.initialize()
-        self.head_video_writer.initialize()
 
         # Reset the topdown image countdown
         self.topdown_image_countdown = self.topdown_wait_frames
@@ -152,8 +160,9 @@ class CameraManager:
                 )
                 action.execute()
                 # Disable further updates to the topdown camera
-                self.topdown_camera._render_product.hydra_texture.set_updates_enabled(False)
+                self.topdown_camera._render_product.hydra_texture.set_updates_enabled(
+                    False
+                )
 
     def close(self):
-        self.head_video_writer.close()
-        self.follow_video_writer.close()
+        self.stop_writers()

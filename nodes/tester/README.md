@@ -1,4 +1,4 @@
-# talker
+# tester
 
 ## Getting started
 
@@ -37,4 +37,4 @@ uv run pytest . # Test
 
 ## License
 
-talker's code are released under the MIT License
+tester's code are released under the MIT License

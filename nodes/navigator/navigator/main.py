@@ -29,7 +29,6 @@ def main():
                         break
 
                 if next_waypoint is None:
-                    print("No active waypoint found, stopping robot.")
                     node.send_output("command_2d", pa.array([0, 0, 0]))
                     continue
 
@@ -53,6 +52,10 @@ def main():
                 node.send_output(
                     output_id="my_output_id", data=pa.array([1, 2, 3]), metadata={},
                 )
+            
+            elif event["id"] == "stop":
+                print("Navigator node received stop command, shutting down.")
+                break
 
 
 if __name__ == "__main__":

@@ -1,9 +1,9 @@
-import signal
 import time
+import os
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import List, Optional, Tuple
-
+from dora import build, run
 import carb.input
 import numpy as np
 import omni.kit.commands
@@ -16,6 +16,7 @@ from isaacsim.core.prims import SingleXFormPrim
 from pxr import Gf, Sdf, UsdGeom
 
 from simulation.camera_manager import CameraManager
+
 # from simulation.devices.gamepad import Se2Gamepad
 # from simulation.devices.keyboard import Se2Keyboard
 from simulation.environments.pyramid import create_stepped_pyramid
@@ -23,13 +24,13 @@ from simulation.environments.rails import create_rails
 from simulation.follow_camera import FollowCamera
 from simulation.go2_robot import Go2Policy
 from simulation.input_listener import InputListener
-from simulation.rerun_logger import RerunLogger
 from simulation.rtf_calculator import RtfCalculator
 from simulation.scene_config import Scene
 from simulation.steady_rate import SteadyRate
 from simulation.waypoint_mission import WaypointMission
 
 SCENE_ROOT = "/Scene"
+OUTPUT_DIR = Path(os.getenv("OUTPUT_DIR", "outputs/artefacts"))
 
 
 def add_reference(
@@ -102,27 +103,27 @@ def add_assets_to_world(scene: Scene, difficulty: float = 1.0) -> DemoSceneConfi
             step_height=0.08 * difficulty,
         )
     elif scene == Scene.hospital_staircase:
-        add_reference("../../assets/jouer/jouer.usda")
+        add_reference("../../../assets/jouer/jouer.usda")
         config.follow_camera_location = (-0.26, -5.46, 1.31)
         config.robot_position = (
             (-1.132995391295986, -3.9926660542312136, -1.3211653993039363e-14),
             (0.7108333798924511, 0, 0, 0.7033604382041077),
         )
     elif scene == Scene.rail_blocks:
-        add_reference("../../assets/rail_blocks/rail_blocks.usd")
+        add_reference("../../../assets/rail_blocks/rail_blocks.usd")
         config.robot_position = (
             (-9.160084778124597, 3.7498660414059666, -4.440892098500626e-16),
             (0.9777604847551223, 0, 0, -0.2097246634314338),
         )
     elif scene == Scene.stone_stairs:
-        add_reference("../../assets/stone_stairs/stone_stairs_f.usd")
+        add_reference("../../../assets/stone_stairs/stone_stairs_f.usd")
         config.follow_camera_location = (
             1.922574758064275,
             -4.040539873363723,
             1.701546649598252,
         )
     elif scene == Scene.excavator:
-        add_reference("../../assets/excavator_scan/excavator.usd")
+        add_reference("../../../assets/excavator_scan/excavator.usd")
         config.follow_camera_location = (
             2.345979532852949,
             2.4994179277846036,
@@ -144,10 +145,6 @@ class EnvironmentRunner:
         self,
         simulation_app: SimulationApp,
         first_scene: Scene = Scene.grid,
-        use_rerun: bool = False,
-        use_video_stream: bool = False,
-        use_auto_pilot: bool = False,
-        rrd_path: str = None,
         difficulty: float = 0.5,
     ):
         self.scene_circulation = [
@@ -158,9 +155,6 @@ class EnvironmentRunner:
         ]
         self.simulation_app = simulation_app
         self.current_scene = first_scene
-        self.use_rerun = use_rerun
-        self.use_video_stream = use_video_stream
-        self.rrd_path = rrd_path
         self.difficulty = difficulty
         self.robot_path = "/World/Go2"
         self.base_command = np.zeros(3)
@@ -199,16 +193,13 @@ class EnvironmentRunner:
             prim_path=self.robot_path,
             name="Go2",
         )
-        if self.use_rerun:
-            self.rerun_logger = RerunLogger(self.robot_path, self.use_video_stream)
-
-        # self.teleop_keyboard = Se2Keyboard()
-        # self.teleop_gamepad = Se2Gamepad()
 
         self.follow_camera = FollowCamera(target_prim_path=self.robot_path)
         self.follow_camera.initialize()
 
-        self.camera_manager = CameraManager(self.follow_camera.camera)
+        self.camera_manager = CameraManager(
+            self.follow_camera.camera,
+        )
 
         self.initialize_scene()
 
@@ -258,17 +249,21 @@ class EnvironmentRunner:
 
         self.waypoint_mission = WaypointMission()
         self.waypoint_mission.initialize()
-        if self.use_rerun:
-            self.rerun_logger.initialize(self.rrd_path)
-            self.rerun_logger.set_scene_name(demo_config.scene_name)
-            self.rerun_logger.link_waypoint_mission(self.waypoint_mission)
-            self.rerun_logger.link_rtf_calculator(self._rtf_calculator)
+
         self._rtf_calculator.reset()
 
         self._is_initializing = False
 
+        self.camera_manager.stop_writers()
+
         self.camera_manager.initialize()
         self.camera_manager.link_waypoint_mission(self.waypoint_mission)
+
+        # TODO: find a better way to separate artefacts outputs per test run
+        self.camera_manager.start_writers(
+            output_dir=OUTPUT_DIR
+            / f"{self.current_scene.name}_{int(self.difficulty * 100)}",
+        )
 
     def load_next_scene(self):
         print("Loading next scene...")
@@ -333,6 +328,9 @@ class EnvironmentRunner:
     def set_command(self, x: float, y: float, yaw: float):
         self.base_command = np.array([x, y, yaw])
 
+    def set_difficulty(self, difficulty: float):
+        self.difficulty = difficulty
+
     def step(self):
         self.check_if_robot_is_on_its_back()
 
@@ -346,8 +344,6 @@ class EnvironmentRunner:
 
         self.follow_camera.update()
         self.waypoint_mission.update()
-        if self.use_rerun:
-            self.rerun_logger.log()
 
         self.camera_manager.capture_frames()
 
