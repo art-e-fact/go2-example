@@ -119,7 +119,7 @@ class Waypoint:
 
 class WaypointMission:
     def __init__(self, robot_path: str = "/World/Go2/base"):
-        self.waypoints = []
+        self.waypoints: list[Waypoint] = []
         self.current_index = 0
         self.robot_path = robot_path
         self.distance_threshold = 0.7  # meters

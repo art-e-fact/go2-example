@@ -78,11 +78,6 @@ def simulation(
 
         while runner.simulation_app.is_running():
             runner.step()
-            node.send_output("rtf", pa.array([runner.get_rtf()]))
-            node.send_output(
-                "waypoint_mission_complete",
-                pa.array([runner.waypoint_mission.is_complete()]),
-            )
 
             # Consume all buffered events and then continue the simulation
             event = node.next(timeout=0.01)
@@ -108,6 +103,32 @@ def simulation(
                     print(f"Node received command_2d: {command_2d}")
                     x, y, yaw = command_2d
                     runner.set_command(x, y, yaw)
+
+                elif event["id"] == "pub_status_tick":
+                    node.send_output("rtf", pa.array([runner.get_rtf()]))
+                    node.send_output(
+                        "waypoint_mission_complete",
+                        pa.array([runner.waypoint_mission.is_complete()]),
+                    )
+                    node.send_output(
+                        "waypoints",
+                        pa.array(
+                            [
+                                {
+                                    "status": runner.waypoint_mission.get_waypoint_status(
+                                        wp
+                                    ).value,
+                                    "position": wp.get_position()[0],
+                                }
+                                for wp in runner.waypoint_mission.waypoints
+                            ]
+                        ),
+                    )
+                    robot_pos, robot_quat = runner.get_robot_pose()
+                    node.send_output(
+                        "robot_pose",
+                        pa.array([{"position": robot_pos, "quaternion": robot_quat}]),
+                    )
 
                 elif event["id"] == "stop":
                     print("Node received stop command, shutting down simulation.")

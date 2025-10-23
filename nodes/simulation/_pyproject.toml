@@ -1,8 +1,8 @@
 [project]
-name = "simulation"
+name = "go2-example"
 version = "0.0.0"
 authors = [{ name = "Your Name", email = "email@email.com" }]
-description = "simulation"
+description = "go2-example"
 license = { text = "MIT" }
 readme = "README.md"
 requires-python = ">=3.8"
@@ -17,7 +17,11 @@ dependencies = [
     "pandas>=2.3.3",
     "pygame>=2.6.1",
     "dora-rs-cli>=0.3.13",
+    "scipy",
 ]
+
+[tool.uv.workspace]
+members = ["nodes/*"]
 
 [[tool.uv.index]]
 url = "https://pypi.nvidia.com/"
@@ -43,4 +47,5 @@ extend-select = [
   "D",   # pydocstyle
   "UP"
 ]
+
 

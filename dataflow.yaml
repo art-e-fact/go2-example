@@ -7,9 +7,10 @@ nodes:
       OMNI_KIT_ACCEPT_EULA: YES
     inputs:
       command_2d: navigator/command_2d
+      pub_status_tick: dora/timer/millis/500
     outputs:
       - robot_pose
-      - waypoint_poses
+      - waypoints
 
   - id: navigator
     build: pip install -e ./nodes/navigator
@@ -17,9 +18,10 @@ nodes:
     inputs:
       tick: dora/timer/millis/100
       robot_pose: simulation/robot_pose
-      waypoint_poses: simulation/waypoint_poses
+      waypoints: simulation/waypoints
     outputs:
       - command_2d
+
   # - id: tester
   #   build: pip install -e ./listener-1
   #   path: pytest

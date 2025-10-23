@@ -12,9 +12,9 @@ from isaacsim import SimulationApp
 from isaacsim.core.api import World
 from isaacsim.core.utils import stage as stage_utils
 from omni.isaac.core.utils.prims import get_prim_at_path
+from isaacsim.core.prims import SingleXFormPrim
 from pxr import Gf, Sdf, UsdGeom
 
-from simulation.auto_pilot import AutoPilot
 from simulation.camera_manager import CameraManager
 # from simulation.devices.gamepad import Se2Gamepad
 # from simulation.devices.keyboard import Se2Keyboard
@@ -160,7 +160,6 @@ class EnvironmentRunner:
         self.current_scene = first_scene
         self.use_rerun = use_rerun
         self.use_video_stream = use_video_stream
-        self.use_auto_pilot = use_auto_pilot
         self.rrd_path = rrd_path
         self.difficulty = difficulty
         self.robot_path = "/World/Go2"
@@ -268,9 +267,6 @@ class EnvironmentRunner:
 
         self._is_initializing = False
 
-        if self.use_auto_pilot:
-            self.auto_pilot = AutoPilot(self.waypoint_mission)
-
         self.camera_manager.initialize()
         self.camera_manager.link_waypoint_mission(self.waypoint_mission)
 
@@ -355,21 +351,15 @@ class EnvironmentRunner:
 
         self.camera_manager.capture_frames()
 
-        # if self.world.is_playing():
-        #     # Use the device that has input
-        #     if self.use_auto_pilot and self.auto_pilot is not None:
-        #         self.base_command = self.auto_pilot.advance()
-        #     else:
-        #         self.base_command = self.teleop_keyboard.advance()
-        #         if np.all(self.base_command == 0):
-        #             self.base_command = self.teleop_gamepad.advance()
-
         # Prevent the RTF from going above 1.0 (faster than real-time)
         self.steady_rate.sleep()
 
     def get_rtf(self) -> float:
         return self._rtf_calculator.rtf
-        
+
+    def get_robot_pose(self) -> Tuple[np.ndarray, np.ndarray]:
+        robot_xform = SingleXFormPrim(str(self.waypoint_mission.robot_path))
+        return robot_xform.get_world_pose()
 
     def close(self):
         self.camera_manager.close()
