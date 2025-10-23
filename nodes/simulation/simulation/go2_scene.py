@@ -16,8 +16,8 @@ from pxr import Gf, Sdf, UsdGeom
 
 from simulation.auto_pilot import AutoPilot
 from simulation.camera_manager import CameraManager
-from simulation.devices.gamepad import Se2Gamepad
-from simulation.devices.keyboard import Se2Keyboard
+# from simulation.devices.gamepad import Se2Gamepad
+# from simulation.devices.keyboard import Se2Keyboard
 from simulation.environments.pyramid import create_stepped_pyramid
 from simulation.environments.rails import create_rails
 from simulation.follow_camera import FollowCamera
@@ -203,8 +203,8 @@ class EnvironmentRunner:
         if self.use_rerun:
             self.rerun_logger = RerunLogger(self.robot_path, self.use_video_stream)
 
-        self.teleop_keyboard = Se2Keyboard()
-        self.teleop_gamepad = Se2Gamepad()
+        # self.teleop_keyboard = Se2Keyboard()
+        # self.teleop_gamepad = Se2Gamepad()
 
         self.follow_camera = FollowCamera(target_prim_path=self.robot_path)
         self.follow_camera.initialize()
@@ -334,6 +334,9 @@ class EnvironmentRunner:
         self.close()
         print("Environment runner cleanup complete.")
 
+    def set_command(self, x: float, y: float, yaw: float):
+        self.base_command = np.array([x, y, yaw])
+
     def step(self):
         self.check_if_robot_is_on_its_back()
 
@@ -352,17 +355,20 @@ class EnvironmentRunner:
 
         self.camera_manager.capture_frames()
 
-        if self.world.is_playing():
-            # Use the device that has input
-            if self.use_auto_pilot and self.auto_pilot is not None:
-                self.base_command = self.auto_pilot.advance()
-            else:
-                self.base_command = self.teleop_keyboard.advance()
-                if np.all(self.base_command == 0):
-                    self.base_command = self.teleop_gamepad.advance()
+        # if self.world.is_playing():
+        #     # Use the device that has input
+        #     if self.use_auto_pilot and self.auto_pilot is not None:
+        #         self.base_command = self.auto_pilot.advance()
+        #     else:
+        #         self.base_command = self.teleop_keyboard.advance()
+        #         if np.all(self.base_command == 0):
+        #             self.base_command = self.teleop_gamepad.advance()
 
         # Prevent the RTF from going above 1.0 (faster than real-time)
         self.steady_rate.sleep()
+
+    def get_rtf(self) -> float:
+        return self._rtf_calculator.rtf
         
 
     def close(self):

@@ -38,6 +38,7 @@ class ControlDtStepper:
 
         return True
 
+
 class ControlCountingStepper:
     """
     Counts the number of calls and tells when to step based on decimation
@@ -56,8 +57,6 @@ class ControlCountingStepper:
 
 
 class Go2Policy(PolicyController):
-    """The Go2 quadruped"""
-
     def __init__(
         self,
         prim_path: str,
@@ -68,8 +67,7 @@ class Go2Policy(PolicyController):
         orientation: Optional[np.ndarray] = None,
         debug_vis: bool = False,
     ) -> None:
-        """
-        Initialize robot and load RL policy.
+        """Initialize robot and load RL policy.
 
         For now, this class is used for both policy inference and control over DDS
 
@@ -87,10 +85,16 @@ class Go2Policy(PolicyController):
 
         super().__init__(name, prim_path, root_path, usd_path, position, orientation)
 
-        policy_path = Path(__file__).resolve().parent.parent.parent / "policy"
+        policy_path = Path(__file__).resolve().parent.parent.parent.parent / "policy"
+        pt_path = policy_path / "policy.pt"
+        if not pt_path.exists():
+            raise FileNotFoundError(f"Policy file not found at {pt_path}")
+        env_path = policy_path / "env.yaml"
+        if not env_path.exists():
+            raise FileNotFoundError(f"Env config file not found at {env_path}")
         self.load_policy(
-            str(policy_path / "policy.pt"),
-            str(policy_path / "env.yaml"),
+            str(pt_path),
+            str(env_path),
         )
         self._action_scale = 0.2
         self._previous_action = np.zeros(12)
@@ -156,8 +160,7 @@ class Go2Policy(PolicyController):
         return lin_vel_b, ang_vel_b, gravity_b
 
     def _compute_observation(self, command):
-        """
-        Compute the observation vector for the policy
+        """Compute the observation vector for the policy
 
         Argument:
         command (np.ndarray) -- the robot command (v_x, v_y, w_z)

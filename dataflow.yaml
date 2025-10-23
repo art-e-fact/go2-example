@@ -1,19 +1,32 @@
 nodes:
-  - id: talker
-    build: pip install -e .
-    path: talker/talker/main.py
+  - id: simulation
+    build: pip install -e ./nodes/simulation
+    path: nodes/simulation/simulation/main.py
     args: --scene generated_pyramid --use-auto-pilot
+    env:
+      OMNI_KIT_ACCEPT_EULA: YES
     inputs:
-      alive: tester/running
+      command_2d: navigator/command_2d
     outputs:
-      - speech
-  - id: tester
-    build: pip install -e ./listener-1
-    path: pytest
-    args: listener-1/listener_1/main.py -s
+      - robot_pose
+      - waypoint_poses
+
+  - id: navigator
+    build: pip install -e ./nodes/navigator
+    path: nodes/navigator/navigator/main.py
     inputs:
-      speech: talker/speech
       tick: dora/timer/millis/100
+      robot_pose: simulation/robot_pose
+      waypoint_poses: simulation/waypoint_poses
     outputs:
-      - response
-      - running
+      - command_2d
+  # - id: tester
+  #   build: pip install -e ./listener-1
+  #   path: pytest
+  #   args: listener-1/listener_1/main.py -s
+  #   inputs:
+  #     speech: talker/rtf
+  #     tick: dora/timer/millis/100
+  #   outputs:
+  #     - response
+  #     - running

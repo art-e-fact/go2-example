@@ -1,0 +1,46 @@
+[project]
+name = "simulation"
+version = "0.0.0"
+authors = [{ name = "Your Name", email = "email@email.com" }]
+description = "simulation"
+license = { text = "MIT" }
+readme = "README.md"
+requires-python = ">=3.8"
+
+dependencies = [
+    "av>=16.0.1",
+    "isaacsim[all,extscache]==5.0.0",
+    "typer>=0.19.2",
+    "torch>=2.7.0",
+    "artefacts-cli>=0.9.6",
+    "artefacts-toolkit>=0.7.1",
+    "pandas>=2.3.3",
+    "pygame>=2.6.1",
+    "dora-rs-cli>=0.3.13",
+]
+
+[[tool.uv.index]]
+url = "https://pypi.nvidia.com/"
+
+[[tool.uv.index]]
+name = "pytorch-cu128"
+url = "https://download.pytorch.org/whl/cu128"
+explicit = true
+
+[tool.uv.sources]
+torch = [
+    { index = "pytorch-cu128" },
+]
+
+[dependency-groups]
+dev = ["pytest >=8.1.1", "ruff >=0.9.1"]
+
+[project.scripts]
+simulation = "simulation.main:main"
+
+[tool.ruff.lint]
+extend-select = [
+  "D",   # pydocstyle
+  "UP"
+]
+
