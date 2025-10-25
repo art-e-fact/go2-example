@@ -5,11 +5,13 @@ authors = [{ name = "Your Name", email = "email@email.com" }]
 description = "tester"
 license = { text = "MIT" }
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.11"
 
 dependencies = [
     "artefacts-cli>=0.9.3",
     "dora-rs >= 0.3.9",
+    "posetree>=1.1.2",
+    "transforms-py",
 ]
 
 [dependency-groups]
@@ -23,3 +25,6 @@ extend-select = [
   "D",   # pydocstyle
   "UP"
 ]
+
+[tool.uv.sources]
+transforms-py = { git = "https://github.com/art-e-fact/transforms-py" }
