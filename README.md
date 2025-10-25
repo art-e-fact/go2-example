@@ -8,42 +8,31 @@
 ## Setup
 
 ```sh
-# install dependencies (and create virtual environment)
-uv sync --dev
+# create the virtual environment
+uv venv --seed --python 3.11
 
-# Install this project
-uv pip install -e .
+# Install dora-rs
+uv pip install dora-rs-cli
+
+# Install all nodes
+uv run dora build dataflow.test.yaml --uv
 ```
 
-## Usage
-```sh
-# To see all options
-uv run -m simulation --help
-
-# Control Robot with arrow keys + z/x or gamepad
-uv run python -m simulation --scene generated_rails
-
-# Execute waypoint mission automatically
-uv run python -m simulation --scene generated_pyramid --use-auto-pilot
-```
 
 ## Testing with Artefacts
 
 Follow the instructions at [docs.artefacts.com](https://docs.artefacts.com/getting-started/) to set-up the project. 
 
 ```sh
-# Run multiple stair-climbing tests with increasing step sizes (see artefacts.yaml for configuration options)
-uv run artefacts run generated_stairs
-
-# Run waypoint mission tests in various photo-realistic environments
-uv run artefacts run photogrammetry_scenes
+# Launch Isaac Sim and execute multiple waypoint tests
+uv run artefacts run waypoint_missions
 ```
 
-## Run tests with pytest
+## Run tests with dora-rs
 This will execute all the tests without parameterization in `artefacts.yaml`
-```
-# Run test with pytest
-uv run pytest
+```sh
+# Run test with dora-rs and pytest
+uv run dora run dataflow.test.yaml --uv
 ```
 
 ## Development
@@ -61,4 +50,4 @@ Steps:
  - Use `scripts/rsl_rl/play.py` to export the trained policy.
  - This will generate `logs/<checkpoint>/exported/policy.pt` and `logs/<checkpoint>/params/env.yaml`. 
  - Override these files in the `./policy` of this repo.
- - Try the new policy with `uv run python -m simulation`
+ - Try the new policy with `uv run python -m simulation` 

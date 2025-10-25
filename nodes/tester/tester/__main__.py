@@ -1,6 +1,6 @@
 """TODO: Add docstring."""
 
-from .main import main
+from .test_waypoints_report import main
 
 if __name__ == "__main__":
     main()
