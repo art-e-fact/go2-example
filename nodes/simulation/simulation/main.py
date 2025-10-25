@@ -77,6 +77,7 @@ def simulation():
                                     wp
                                 ).value,
                                 "position": wp.get_position()[0],
+                                "quaternion": [0, 0, 0, 1],
                             }
                             for wp in runner.waypoint_mission.waypoints
                         ]

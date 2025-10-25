@@ -1,0 +1,39 @@
+nodes:
+  - id: simulation
+    build: pip install -e ./nodes/simulation
+    path: nodes/simulation/simulation/main.py
+    args: --scene generated_pyramid --use-auto-pilot
+    env:
+      OMNI_KIT_ACCEPT_EULA: YES
+      OUTPUT_DIR: outputs/artefacts
+    inputs:
+      command_2d: navigator/command_2d
+      pub_status_tick: dora/timer/millis/200
+      stop: tester/stop
+      load_scene: tester/load_scene
+    outputs:
+      - robot_pose
+      - waypoints
+      - scene_info
+
+  - id: navigator
+    build: pip install -e ./nodes/navigator
+    path: nodes/navigator/navigator/main.py
+    inputs:
+      tick: dora/timer/millis/100
+      robot_pose: simulation/robot_pose
+      waypoints: simulation/waypoints
+      stop: tester/stop
+    outputs:
+      - command_2d
+
+  - id: tester
+    build: pip install -e nodes/tester
+    path: pytest
+    args: nodes/tester/tester/test_waypoints_report.py --junit-xml=outputs/artefacts/tests_junit.xml -s
+    inputs:
+      waypoints: simulation/waypoints
+      scene_info: simulation/scene_info
+    outputs:
+      - stop
+      - load_scene

@@ -30,10 +30,11 @@ nodes:
   - id: tester
     build: pip install -e nodes/tester
     path: pytest
-    args: nodes/tester/tester/main.py --junit-xml=outputs/artefacts/tests_junit.xml -s
+    args: nodes/tester/tester/test_waypoints_poses.py --junit-xml=outputs/artefacts/tests_junit.xml -s
     inputs:
       waypoints: simulation/waypoints
       scene_info: simulation/scene_info
+      robot_pose: simulation/robot_pose
     outputs:
       - stop
       - load_scene
