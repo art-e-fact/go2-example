@@ -16,8 +16,6 @@ dependencies = [
 [dependency-groups]
 dev = ["pytest >=8.1.1", "ruff >=0.9.1"]
 
-msgs = { path = "../../msgs", editable = true }
-
 [project.scripts]
 navigator = "navigator.main:main"
 
@@ -26,3 +24,6 @@ extend-select = [
   "D",   # pydocstyle
   "UP"
 ]
+
+[tool.uv.sources]
+msgs = { path = "../../msgs", editable = true }
