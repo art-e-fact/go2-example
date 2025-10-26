@@ -8,6 +8,7 @@ from enum import Enum
 
 from simulation.scene_config import Scene
 from simulation.check_nvidia_driver import check_nvidia_driver
+import msgs
 
 
 class ControlMode(str, Enum):
@@ -51,16 +52,16 @@ def simulation():
 
         if event["type"] == "INPUT":
             if event["id"] == "load_scene":
-                print(f"Node received load_scene command: {event['value'][0].as_py()}")
-                scene_info = event["value"][0].as_py()
-                scene = Scene(scene_info['name'])
-                runner.set_difficulty(scene_info["difficulty"])
+                scene_info = msgs.SceneInfo.from_arrow(event["value"])
+                scene = Scene(scene_info.name)
+                runner.set_difficulty(scene_info.difficulty)
                 runner.load_scene(scene)
 
             elif event["id"] == "command_2d":
-                command_2d = event["value"].to_pylist()
-                x, y, yaw = command_2d
-                runner.set_command(x, y, yaw)
+                command_2d = msgs.Twist2D.from_arrow(event["value"])
+                runner.set_command(
+                    command_2d.linear_x, command_2d.linear_y, command_2d.angular_z
+                )
 
             elif event["id"] == "pub_status_tick":
                 node.send_output("rtf", pa.array([runner.get_rtf()]))
@@ -68,36 +69,46 @@ def simulation():
                     "waypoint_mission_complete",
                     pa.array([runner.waypoint_mission.is_complete()]),
                 )
-                node.send_output(
-                    "waypoints",
-                    pa.array(
-                        [
-                            {
-                                "status": runner.waypoint_mission.get_waypoint_status(
+                [
+                            msgs.Waypoint(
+                                status=runner.waypoint_mission.get_waypoint_status(
                                     wp
-                                ).value,
-                                "position": wp.get_position()[0],
-                                "quaternion": [0, 0, 0, 1],
-                            }
+                                ),
+                                transform=msgs.Transform.from_position_and_quaternion(
+                                    *wp.get_position()
+                                ),
+                            ).to_arrow()
                             for wp in runner.waypoint_mission.waypoints
                         ]
-                    ),
+                node.send_output(
+                    "waypoints",
+                    msgs.WaypointList(
+                        waypoints=[
+                            msgs.Waypoint(
+                                status=runner.waypoint_mission.get_waypoint_status(
+                                    wp
+                                ),
+                                transform=msgs.Transform.from_position_and_quaternion(
+                                    *wp.get_position()
+                                ),
+                            )
+                            for wp in runner.waypoint_mission.waypoints
+                        ]
+                    ).to_arrow(),
                 )
                 robot_pos, robot_quat = runner.get_robot_pose()
                 node.send_output(
                     "robot_pose",
-                    pa.array([{"position": robot_pos, "quaternion": robot_quat}]),
+                    msgs.Transform.from_position_and_quaternion(
+                        robot_pos, robot_quat
+                    ).to_arrow(),
                 )
                 node.send_output(
                     "scene_info",
-                    pa.array(
-                        [
-                            {
-                                "name": runner.current_scene.name,
-                                "difficulty": runner.difficulty,
-                            }
-                        ]
-                    ),
+                    msgs.SceneInfo(
+                        name=runner.current_scene.name,
+                        difficulty=runner.difficulty,
+                    ).to_arrow(),
                 )
 
             elif event["id"] == "stop":

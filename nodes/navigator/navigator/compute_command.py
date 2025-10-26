@@ -1,7 +1,9 @@
 import numpy as np
 from scipy.spatial.transform import Rotation
+from msgs import Transform
 
-def compute_command(robot_position: np.ndarray, robot_quaternion: np.ndarray, goal_position: np.ndarray) -> np.ndarray:
+
+def compute_command(robot_pose: Transform, goal_position: np.ndarray) -> np.ndarray:
     """Calculate control command based on the robot pose and the goal position.
 
     It will drive straight to the goal without considering obstacles.
@@ -15,7 +17,7 @@ def compute_command(robot_position: np.ndarray, robot_quaternion: np.ndarray, go
         np.ndarray: Command vector [linear_x, linear_y, angular_z]
     """
     # Calculate 2D direction vector (ignoring height)
-    direction = goal_position[:2] - robot_position[:2]
+    direction = goal_position[:2] - robot_pose.position[:2]
     distance = np.linalg.norm(direction)
 
     # If we're very close to the goal, just stop
@@ -28,9 +30,7 @@ def compute_command(robot_position: np.ndarray, robot_quaternion: np.ndarray, go
 
     # Use scipy Rotation to get forward vector from quaternion
     # Note: robot_quaternion is [w,x,y,z] but scipy expects [x,y,z,w]
-    rot = Rotation.from_quat(
-        [robot_quaternion[1], robot_quaternion[2], robot_quaternion[3], robot_quaternion[0]]
-    )
+    rot = Rotation.from_quat(robot_pose.quaternion, scalar_first=True)
 
     # Apply rotation to the forward unit vector [1,0,0]
     forward_3d = rot.apply([1, 0, 0])
@@ -58,9 +58,7 @@ def compute_command(robot_position: np.ndarray, robot_quaternion: np.ndarray, go
 
     # Create command vector [linear_x, linear_y, angular_z]
     command = np.zeros(3)
-    command[0] = linear_speed * (
-        1 - 0.8 * min(1.0, turn_factor)
-    )  # Forward velocity
+    command[0] = linear_speed * (1 - 0.8 * min(1.0, turn_factor))  # Forward velocity
     command[2] = angular_speed * np.clip(angle, -1.0, 1.0)  # Angular velocity
 
     return command

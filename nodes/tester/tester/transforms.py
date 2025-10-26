@@ -1,5 +1,5 @@
 import numpy as np
-from posetree import Transform
+from msgs import Transform
 from transforms_py import PyRegistry
 
 
@@ -33,10 +33,21 @@ class Transforms:
     ):
         """Add a transform to the registry."""
         self._registry.add_transform(
-            *transform.position, *transform.rotation.as_quat(), timestamp, parent_frame, child_frame
+            transform.x,
+            transform.y,
+            transform.z,
+            transform.qx,
+            transform.qy,
+            transform.qz,
+            transform.qw,
+            timestamp,
+            parent_frame,
+            child_frame,
         )
 
-    def distance_to(self, from_frame: str, to_frame: str, timestamp: float = 0) -> float:
+    def distance_to(
+        self, from_frame: str, to_frame: str, timestamp: float = 0
+    ) -> float:
         """Compute the Euclidean distance between two frames at a given timestamp."""
         transform = self.get_transform(from_frame, to_frame, timestamp)
-        return np.linalg.norm(transform.position)
+        return np.linalg.norm([transform.x, transform.y, transform.z])

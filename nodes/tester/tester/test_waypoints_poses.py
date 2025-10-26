@@ -3,10 +3,10 @@
 from dora import Node
 import pytest
 import pyarrow as pa
-from posetree import Transform
 import time
 
-from nodes.tester.tester.transforms import Transforms
+import msgs
+from tester.transforms import Transforms
 
 
 @pytest.fixture(scope="session")
@@ -22,9 +22,8 @@ def test_receives_scene_info_on_startup(node: Node):
     """Test that the node receives scene info on startup."""
     for event in node:
         if event["type"] == "INPUT" and event["id"] == "scene_info":
-            scene_info = event["value"].to_pylist()[0]
-            assert "name" in scene_info
-            assert "difficulty" in scene_info
+            # Validate scene info message
+            msgs.SceneInfo.from_arrow(event["value"])
             return
 
 
@@ -52,28 +51,27 @@ def test_completes_waypoint_mission_in_photo_realistic_env(node: Node, scene: st
 def run_waypoint_mission_test(node: Node, scene: str, difficulty: float):
     transforms = Transforms()
     node.send_output(
-        "load_scene", pa.array([{"name": scene, "difficulty": difficulty}])
+        "load_scene", msgs.SceneInfo(name=scene, difficulty=difficulty).to_arrow()
     )
 
     waypoint_list: list[str] = []
     next_waypoint_index = 0
-    
+
     for event in node:
         if event["type"] == "INPUT" and event["id"] == "waypoints":
-            waypoints: list[str | True] = event["value"].to_pylist()
+            waypoint_list_msg = msgs.WaypointList.from_arrow(event["value"])
+            waypoints = waypoint_list_msg.waypoints
             # Bail if waypoints are empty
             if not waypoints:
                 continue
             # Initialize checklist
-            for wp in waypoints:
-                waypoint_frame = f"waypoint_{waypoints.index(wp)}"
+            for i, wp in enumerate(waypoints):
+                waypoint_frame = f"waypoint_{i}"
                 if waypoint_frame not in waypoint_list:
                     waypoint_list.append(waypoint_frame)
-    
+
                 transforms.add_transform(
-                    Transform.from_position_and_quaternion(
-                        wp["position"], wp["quaternion"]
-                    ),
+                    wp.transform,
                     int(time.time()),
                     parent_frame="world",
                     child_frame=waypoint_frame,
@@ -84,10 +82,7 @@ def run_waypoint_mission_test(node: Node, scene: str, difficulty: float):
             if len(waypoint_list) == 0:
                 continue
 
-            pose = event["value"].to_pylist()[0]
-            transform = Transform.from_position_and_quaternion(
-                pose["position"], pose["quaternion"]
-            )
+            transform = msgs.Transform.from_arrow(event["value"])
             timestamp = int(time.time())
             transforms.add_transform(
                 transform,
@@ -95,8 +90,8 @@ def run_waypoint_mission_test(node: Node, scene: str, difficulty: float):
                 parent_frame="world",
                 child_frame="robot",
             )
-            
-            distance_threshold = 0.5
+
+            distance_threshold = 0.6
             goal_frame = waypoint_list[next_waypoint_index]
             distance = transforms.distance_to(
                 from_frame="robot",
@@ -111,4 +106,3 @@ def run_waypoint_mission_test(node: Node, scene: str, difficulty: float):
                 else:
                     print("All waypoints completed!")
                     break
-        

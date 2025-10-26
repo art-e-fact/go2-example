@@ -3,6 +3,7 @@
 from dora import Node
 import pytest
 import pyarrow as pa
+import msgs
 
 
 @pytest.fixture(scope="session")
@@ -18,9 +19,9 @@ def test_receives_scene_info_on_startup(node: Node):
     """Test that the node receives scene info on startup."""
     for event in node:
         if event["type"] == "INPUT" and event["id"] == "scene_info":
-            scene_info = event["value"].to_pylist()[0]
-            assert "name" in scene_info
-            assert "difficulty" in scene_info
+            scene_info = msgs.SceneInfo.from_arrow(event["value"])
+            assert scene_info.name is not None
+            assert scene_info.difficulty is not None
             return
 
 
@@ -47,14 +48,14 @@ def test_completes_waypoint_mission_in_photo_realistic_env(node: Node, scene: st
 
 def run_waypoint_mission_test(node: Node, scene: str, difficulty: float):
     node.send_output(
-        "load_scene", pa.array([{"name": scene, "difficulty": difficulty}])
+        "load_scene", msgs.SceneInfo(name=scene, difficulty=difficulty).to_arrow()
     )
 
     for event in node:
         if event["type"] == "INPUT":
             if event["id"] == "waypoints":
-                waypoints = event["value"].to_pylist()
+                waypoints = msgs.WaypointList.from_arrow(event["value"]).waypoints
                 if len(waypoints) == 0:
                     continue
-                if all(wp["status"] == "completed" for wp in waypoints):
+                if all(wp.status == msgs.WaypointStatus.COMPLETED for wp in waypoints):
                     return

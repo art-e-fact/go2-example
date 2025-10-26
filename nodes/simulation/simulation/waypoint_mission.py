@@ -9,6 +9,8 @@ import omni.usd
 from isaacsim.core.prims import SingleXFormPrim
 from pxr import Gf, Sdf, Usd, UsdGeom, UsdLux
 
+from msgs import WaypointStatus
+
 
 def find_prims_by_name_pattern(pattern: str) -> List[Usd.Prim]:
     """
@@ -34,12 +36,6 @@ def find_prims_by_name_pattern(pattern: str) -> List[Usd.Prim]:
             matching_prims.append(prim)
 
     return matching_prims
-
-
-class WaypointStatus(Enum):
-    INACTIVE = "inactive"
-    ACTIVE = "active"
-    COMPLETED = "completed"
 
 
 class Waypoint:
@@ -122,7 +118,7 @@ class WaypointMission:
         self.waypoints: list[Waypoint] = []
         self.current_index = 0
         self.robot_path = robot_path
-        self.distance_threshold = 0.7  # meters
+        self.distance_threshold = 0.5  # meters
         self.mission_start_time = None
         self.waypoint_completed_times = []
         self.mission_end_time = None
