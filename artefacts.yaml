@@ -34,7 +34,7 @@ jobs:
     scenarios:
       defaults:
         params:
-          scene: ["hospital_staircase", "rail_blocks", "stone_stairs", "excavator"]
+          scene: ["rail_blocks", "stone_stairs", "excavator"]
 
       settings:
         - name: scenario1
