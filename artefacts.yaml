@@ -2,7 +2,7 @@ project: artefacts/go2-isaac-example
 version: 0.1.0
 
 jobs:
-  generated_stairs:
+  waypoint_missions:
     type: test
     package:
       docker:
@@ -11,32 +11,14 @@ jobs:
     runtime:
       framework: other
       simulator: isaac_sim
+      
     scenarios:
-      defaults:
-        params:
-          difficulty: [0.5, 0.9, 1.01]
-          scene: ["generated_pyramid"]
-
       settings:
-        - name: scenario1
-          run: "rm -rf outputs/artefacts && pytest tests/ --junit-xml=outputs/artefacts/tests_junit.xml -s"
+        - name: report_based_waypoint_mission_test
+          run: "rm -rf outputs/artefacts && uv run dora run dataflow.test.yaml --uv"
+          output_dirs: ["outputs/artefacts"]
+          
+        - name: pose_based_waypoint_mission_test
+          run: "rm -rf outputs/artefacts && uv run dora run dataflow.pose.test.yaml --uv"
           output_dirs: ["outputs/artefacts"]
   
-  photogrammetry_scenes:
-    type: test
-    package:
-      docker:
-        build:
-          dockerfile: empty
-    runtime:
-      framework: other
-      simulator: isaac_sim
-    scenarios:
-      defaults:
-        params:
-          scene: ["hospital_staircase", "rail_blocks", "stone_stairs", "excavator"]
-
-      settings:
-        - name: scenario1
-          run: "rm -rf outputs/artefacts && pytest tests/ --junit-xml=outputs/artefacts/tests_junit.xml -s"
-          output_dirs: ["outputs/artefacts"]

@@ -3,47 +3,41 @@
 ## Prerequisites
 - Isaac Sim 5.0 compatible [hardware](https://docs.isaacsim.omniverse.nvidia.com/latest/installation/requirements.html) and [driver](https://docs.omniverse.nvidia.com/dev-guide/latest/common/technical-requirements.html)
 - [`uv` package manager](https://docs.astral.sh/uv/getting-started/installation/) (Not mandatory, but the instructions below are using `uv`)
-- [Git LFS](https://docs.github.com/en/repositories/working-with-files/managing-large-files/installing-git-large-file-storage) - (Optional) For downloading the photorealistic assets.
+- [Git LFS](https://docs.github.com/en/repositories/working-with-files/managing-large-files/installing-git-large-file-storage) 
 
 ## Setup
 
-```sh
-# install dependencies (and create virtual environment)
-uv sync --dev
-
-# Install this project
-uv pip install -e .
+```
+git clone git@github.com:art-e-fact/go2-example.git
+git lfs pull
 ```
 
-## Usage
 ```sh
-# To see all options
-uv run -m simulation --help
+# create the virtual environment
+uv venv --seed --python 3.11
 
-# Control Robot with arrow keys + z/x or gamepad
-uv run python -m simulation --scene generated_rails
+# Install dora-rs
+uv pip install dora-rs-cli
 
-# Execute waypoint mission automatically
-uv run python -m simulation --scene generated_pyramid --use-auto-pilot
+# Install all nodes
+uv run dora build dataflow.test.yaml --uv
 ```
+
 
 ## Testing with Artefacts
 
 Follow the instructions at [docs.artefacts.com](https://docs.artefacts.com/getting-started/) to set-up the project. 
 
 ```sh
-# Run multiple stair-climbing tests with increasing step sizes (see artefacts.yaml for configuration options)
-uv run artefacts run generated_stairs
-
-# Run waypoint mission tests in various photo-realistic environments
-uv run artefacts run photogrammetry_scenes
+# Launch Isaac Sim and execute multiple waypoint tests
+uv run artefacts run waypoint_missions
 ```
 
-## Run tests with pytest
+## Run tests with dora-rs
 This will execute all the tests without parameterization in `artefacts.yaml`
-```
-# Run test with pytest
-uv run pytest
+```sh
+# Run test with dora-rs and pytest
+uv run dora run dataflow.test.yaml --uv
 ```
 
 ## Development
@@ -61,4 +55,4 @@ Steps:
  - Use `scripts/rsl_rl/play.py` to export the trained policy.
  - This will generate `logs/<checkpoint>/exported/policy.pt` and `logs/<checkpoint>/params/env.yaml`. 
  - Override these files in the `./policy` of this repo.
- - Try the new policy with `uv run python -m simulation`
+ - Try the new policy with `uv run python -m simulation` 

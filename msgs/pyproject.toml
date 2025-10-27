@@ -1,0 +1,19 @@
+[project]
+name = "msgs"
+version = "0.1.0"
+description = "Arrow message definitions"
+readme = "README.md"
+authors = [
+    { name = "Andras Polgar", email = "azazdeaz@gmail.com" }
+]
+requires-python = ">=3.11"
+dependencies = [
+    "pyarrow-message",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.uv.sources]
+pyarrow-message = { git = "https://github.com/Hennzau/arrow-message.git", subdirectory = "crates/arrow-message-python", rev = "de18e2a" }
