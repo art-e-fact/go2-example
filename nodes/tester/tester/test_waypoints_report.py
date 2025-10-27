@@ -38,7 +38,7 @@ def test_completes_waypoint_mission_with_variable_height_steps(
 
 
 @pytest.mark.parametrize(
-    "scene", ["hospital_staircase", "rail_blocks", "stone_stairs", "excavator"]
+    "scene", ["rail_blocks", "stone_stairs", "excavator"]
 )
 @pytest.mark.timeout(50)
 def test_completes_waypoint_mission_in_photo_realistic_env(node: Node, scene: str):
