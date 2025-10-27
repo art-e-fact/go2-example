@@ -1,14 +1,14 @@
 """TODO: Add docstring."""
 
+from enum import Enum
+
+import msgs
 import pyarrow as pa
 from dora import Node
 
-
-from enum import Enum
-
-from simulation.scene_config import Scene
+from simulation.simulation_time_output import SimulationTimeOutput
 from simulation.check_nvidia_driver import check_nvidia_driver
-import msgs
+from simulation.scene_config import Scene
 
 
 class ControlMode(str, Enum):
@@ -31,9 +31,11 @@ def simulation():
 
     from simulation.go2_scene import EnvironmentRunner, simulate_unitree_sdk
 
-
     runner = EnvironmentRunner(simulation_app)
     runner.initialize()
+
+    # Publish simulation time at each physics step
+    _simulation_time_output = SimulationTimeOutput(node, runner.world)
 
     while runner.simulation_app.is_running():
         runner.step()
@@ -70,24 +72,20 @@ def simulation():
                     pa.array([runner.waypoint_mission.is_complete()]),
                 )
                 [
-                            msgs.Waypoint(
-                                status=runner.waypoint_mission.get_waypoint_status(
-                                    wp
-                                ),
-                                transform=msgs.Transform.from_position_and_quaternion(
-                                    *wp.get_position()
-                                ),
-                            ).to_arrow()
-                            for wp in runner.waypoint_mission.waypoints
-                        ]
+                    msgs.Waypoint(
+                        status=runner.waypoint_mission.get_waypoint_status(wp),
+                        transform=msgs.Transform.from_position_and_quaternion(
+                            *wp.get_position()
+                        ),
+                    ).to_arrow()
+                    for wp in runner.waypoint_mission.waypoints
+                ]
                 node.send_output(
                     "waypoints",
                     msgs.WaypointList(
                         waypoints=[
                             msgs.Waypoint(
-                                status=runner.waypoint_mission.get_waypoint_status(
-                                    wp
-                                ),
+                                status=runner.waypoint_mission.get_waypoint_status(wp),
                                 transform=msgs.Transform.from_position_and_quaternion(
                                     *wp.get_position()
                                 ),
