@@ -12,7 +12,6 @@ dependencies = [
     "isaacsim[all,extscache]==5.0.0",
     "typer>=0.19.2",
     "torch>=2.7.0",
-    "artefacts-cli>=0.9.6",
     "artefacts-toolkit>=0.7.1",
     "pandas>=2.3.3",
     "pygame>=2.6.1",
