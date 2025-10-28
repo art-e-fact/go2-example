@@ -206,8 +206,6 @@ class EnvironmentRunner:
         self.world.add_physics_callback(
             "physics_step", callback_fn=self.on_physics_step
         )
-        # signal.signal(signal.SIGTERM, self._handle_shutdown)
-        # signal.signal(signal.SIGINT, self._handle_shutdown)
 
     def _handle_shutdown(self, signum, frame):
         """Handle shutdown signals."""
@@ -298,12 +296,6 @@ class EnvironmentRunner:
             print("Robot not initialized yet")
             return
 
-        if not self._is_initializing:
-            try:
-                self.go2.forward(step_size, self.base_command)
-            except ValueError as e:
-                print(f"Error in policy forward: {e}")
-                self._needed_reset = True
 
     def check_if_robot_is_on_its_back(self):
         if not self.go2.is_on_back():

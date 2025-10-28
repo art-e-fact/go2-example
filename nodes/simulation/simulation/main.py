@@ -6,9 +6,9 @@ import msgs
 import pyarrow as pa
 from dora import Node
 
-from simulation.simulation_time_output import SimulationTimeOutput
 from simulation.check_nvidia_driver import check_nvidia_driver
 from simulation.scene_config import Scene
+from simulation.simulation_time_output import SimulationTimeOutput
 
 
 class ControlMode(str, Enum):
@@ -37,6 +37,12 @@ def simulation():
     # Publish simulation time at each physics step
     _simulation_time_output = SimulationTimeOutput(node, runner.world)
 
+    def on_physics_step(dt: float):
+        observations = runner.go2.compute_observations()
+        node.send_output("observations", observations.to_arrow())
+
+    runner.world.add_physics_callback("observation_output", on_physics_step)
+
     while runner.simulation_app.is_running():
         runner.step()
 
@@ -59,11 +65,9 @@ def simulation():
                 runner.set_difficulty(scene_info.difficulty)
                 runner.load_scene(scene)
 
-            elif event["id"] == "command_2d":
-                command_2d = msgs.Twist2D.from_arrow(event["value"])
-                runner.set_command(
-                    command_2d.linear_x, command_2d.linear_y, command_2d.angular_z
-                )
+            elif event["id"] == "joint_commands":
+                joint_commands = msgs.JointCommands.from_arrow(event["value"])
+                runner.go2.set_target_positions(joint_commands.positions)
 
             elif event["id"] == "pub_status_tick":
                 node.send_output("rtf", pa.array([runner.get_rtf()]))

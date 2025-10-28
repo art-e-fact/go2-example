@@ -54,5 +54,5 @@ Steps:
  - Follow the instructions in [go2_isaac_lab_env](https://github.com/art-e-fact/go2_isaac_lab_env) train the new policy
  - Use `scripts/rsl_rl/play.py` to export the trained policy.
  - This will generate `logs/<checkpoint>/exported/policy.pt` and `logs/<checkpoint>/params/env.yaml`. 
- - Override these files in the `./policy` of this repo.
+ - Override these files in the `./nodes/policy_controller/policy` of this repo.
  - Try the new policy with `uv run python -m simulation` 
