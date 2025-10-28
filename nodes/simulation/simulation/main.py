@@ -37,6 +37,7 @@ def simulation():
     # Publish simulation time at each physics step
     _simulation_time_output = SimulationTimeOutput(node, runner.world)
 
+    # Publish observations at each physics step
     def on_physics_step(dt: float):
         observations = runner.go2.compute_observations()
         node.send_output("observations", observations.to_arrow())
@@ -44,18 +45,14 @@ def simulation():
     runner.world.add_physics_callback("observation_output", on_physics_step)
 
     while runner.simulation_app.is_running():
-        runner.step()
-
         # Consume all buffered events and then continue the simulation
-        event = node.next(timeout=0.01)
+        event = node.next(timeout=0.001)
 
-        if event is None:
-            continue
-
-        # Skip event stream timeout errors (we use timeout=0.0 above)
+        # The event buffer is empty, step the simulation
         if event["type"] == "ERROR" and event["error"].startswith(
             "Timeout event stream error: Receiver timed out"
         ):
+            runner.step()
             continue
 
         if event["type"] == "INPUT":
