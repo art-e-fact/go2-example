@@ -1,14 +1,14 @@
 """TODO: Add docstring."""
 
+from enum import Enum
+
+import msgs
 import pyarrow as pa
 from dora import Node
 
-
-from enum import Enum
-
-from simulation.scene_config import Scene
 from simulation.check_nvidia_driver import check_nvidia_driver
-import msgs
+from simulation.scene_config import Scene
+from simulation.simulation_time_output import SimulationTimeOutput
 
 
 class ControlMode(str, Enum):
@@ -31,23 +31,28 @@ def simulation():
 
     from simulation.go2_scene import EnvironmentRunner, simulate_unitree_sdk
 
-
     runner = EnvironmentRunner(simulation_app)
     runner.initialize()
 
+    # Publish simulation time at each physics step
+    _simulation_time_output = SimulationTimeOutput(node, runner.world)
+
+    # Publish observations at each physics step
+    def on_physics_step(dt: float):
+        observations = runner.go2.compute_observations()
+        node.send_output("observations", observations.to_arrow())
+
+    runner.world.add_physics_callback("observation_output", on_physics_step)
+
     while runner.simulation_app.is_running():
-        runner.step()
-
         # Consume all buffered events and then continue the simulation
-        event = node.next(timeout=0.01)
+        event = node.next(timeout=0.001)
 
-        if event is None:
-            continue
-
-        # Skip event stream timeout errors (we use timeout=0.0 above)
+        # The event buffer is empty, step the simulation
         if event["type"] == "ERROR" and event["error"].startswith(
             "Timeout event stream error: Receiver timed out"
         ):
+            runner.step()
             continue
 
         if event["type"] == "INPUT":
@@ -57,11 +62,9 @@ def simulation():
                 runner.set_difficulty(scene_info.difficulty)
                 runner.load_scene(scene)
 
-            elif event["id"] == "command_2d":
-                command_2d = msgs.Twist2D.from_arrow(event["value"])
-                runner.set_command(
-                    command_2d.linear_x, command_2d.linear_y, command_2d.angular_z
-                )
+            elif event["id"] == "joint_commands":
+                joint_commands = msgs.JointCommands.from_arrow(event["value"])
+                runner.go2.set_target_positions(joint_commands.positions)
 
             elif event["id"] == "pub_status_tick":
                 node.send_output("rtf", pa.array([runner.get_rtf()]))
@@ -70,24 +73,20 @@ def simulation():
                     pa.array([runner.waypoint_mission.is_complete()]),
                 )
                 [
-                            msgs.Waypoint(
-                                status=runner.waypoint_mission.get_waypoint_status(
-                                    wp
-                                ),
-                                transform=msgs.Transform.from_position_and_quaternion(
-                                    *wp.get_position()
-                                ),
-                            ).to_arrow()
-                            for wp in runner.waypoint_mission.waypoints
-                        ]
+                    msgs.Waypoint(
+                        status=runner.waypoint_mission.get_waypoint_status(wp),
+                        transform=msgs.Transform.from_position_and_quaternion(
+                            *wp.get_position()
+                        ),
+                    ).to_arrow()
+                    for wp in runner.waypoint_mission.waypoints
+                ]
                 node.send_output(
                     "waypoints",
                     msgs.WaypointList(
                         waypoints=[
                             msgs.Waypoint(
-                                status=runner.waypoint_mission.get_waypoint_status(
-                                    wp
-                                ),
+                                status=runner.waypoint_mission.get_waypoint_status(wp),
                                 transform=msgs.Transform.from_position_and_quaternion(
                                     *wp.get_position()
                                 ),

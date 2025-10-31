@@ -2,6 +2,7 @@ from enum import Enum
 from pyarrow_message import ArrowMessage
 from dataclasses import dataclass, asdict
 import pyarrow as pa
+import numpy as np
 
 
 @dataclass
@@ -26,6 +27,10 @@ class Timestamp(ArrowMessage):
         import time
 
         return cls.from_float_seconds(time.time())
+    
+    @property
+    def float_seconds(self) -> float:
+        return self.seconds + self.nanoseconds / 1e9
 
 
 @dataclass
@@ -66,6 +71,20 @@ class Twist2D(ArrowMessage):
     linear_x: float
     linear_y: float
     angular_z: float
+
+@dataclass
+class Observations(ArrowMessage):
+    lin_vel: np.ndarray
+    ang_vel: np.ndarray
+    gravity: np.ndarray
+    joint_positions: np.ndarray
+    joint_velocities: np.ndarray
+    height_scan: np.ndarray
+
+@dataclass
+class JointCommands(ArrowMessage):
+    positions: np.ndarray
+
 
 
 class WaypointStatus(ArrowMessage, Enum):

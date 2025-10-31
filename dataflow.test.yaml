@@ -7,14 +7,28 @@ nodes:
       OMNI_KIT_ACCEPT_EULA: YES
       OUTPUT_DIR: outputs/artefacts
     inputs:
-      command_2d: navigator/command_2d
       pub_status_tick: dora/timer/millis/200
       stop: tester/stop
       load_scene: tester/load_scene
+      joint_commands: policy_controller/joint_commands
     outputs:
       - robot_pose
       - waypoints
       - scene_info
+      - rtf
+      - observations
+      - simulation_time
+
+  - id: policy_controller
+    build: pip install -e ./nodes/policy_controller
+    path: nodes/policy_controller/policy_controller/main.py
+    inputs:
+      observations: simulation/observations
+      clock: simulation/simulation_time
+      command_2d: navigator/command_2d
+      stop: tester/stop
+    outputs:
+      - joint_commands
 
   - id: navigator
     build: pip install -e ./nodes/navigator
