@@ -14,7 +14,7 @@ dependencies = [
     "posetree>=1.1.2",
     "pytest >=8.1.1",
     "pytest-timeout>=2.4.0",
-    "transforms-py",
+    "transforms-py>=0.1.1",
 ]
 
 [dependency-groups]
@@ -31,5 +31,4 @@ extend-select = [
 ]
 
 [tool.uv.sources]
-transforms-py = { git = "https://github.com/art-e-fact/transforms-py" }
 msgs = { path = "../../msgs", editable = true }
