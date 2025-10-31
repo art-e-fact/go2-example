@@ -4,17 +4,20 @@ import yaml
 
 
 class PolicyConfig:
+    """RL policy configuration parser."""
+
     def __init__(self, config_path: Path):
-        """
-        Initializes the Config with a configuration file.
+        """Initialize the Config with a configuration file.
 
         Args:
             config_path (Path): Path to the .yaml file.
+
         """
         # Load the model and configuration
         if not config_path.exists():
             raise FileNotFoundError(f"Config file not found at {config_path}")
 
+        # Custom YAML loader to ignore unknown tags and parse tuples (copied from Isaac Lab)
         class SafeLoaderIgnoreUnknown(yaml.SafeLoader):
             def ignore_unknown(self, node) -> None:
                 return None
@@ -39,7 +42,7 @@ class PolicyConfig:
     @property
     def decimation(self) -> int:
         return self.config.get("decimation")
-    
+
     @property
     def action_scale(self) -> float:
         return 0.2  # TODO: Wind out where to read this from
