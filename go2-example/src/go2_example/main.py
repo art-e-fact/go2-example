@@ -12,7 +12,7 @@ def exec_dataflow(dataflow: DataflowBuilder, build: bool, run: bool):
     temp_dataflow_path = Path(__file__).parent / "generated.dataflow.yaml"
     dataflow.to_yaml(temp_dataflow_path)
     if build:
-        dora.build(str(temp_dataflow_path))
+        dora.build(str(temp_dataflow_path), uv=True)
     if run:
         dora.run(str(temp_dataflow_path))
 
@@ -36,12 +36,14 @@ def run_dataflow(
     """Compose the dataflow, and build/run it with dora-rs."""
 
     dataflow = DataflowBuilder(name="go2-example-dataflow")
-    output_path = Path("../outputs/artefacts")
+    workspace_path = Path(__file__).parent.parent.parent.parent
+    output_path = workspace_path / "outputs/artefacts"
+    nodes_path = workspace_path / "nodes"
 
     simulation = dataflow.add_node(
         id="simulation",
         path="simulation",
-        build="pip install -e ../nodes/simulation",
+        build=f"pip install -e {nodes_path / 'simulation'}",
         args="--scene generated_pyramid --use-auto-pilot",
         env={
             "OMNI_KIT_ACCEPT_EULA": "YES",
@@ -61,8 +63,8 @@ def run_dataflow(
 
     policy_controller = dataflow.add_node(
         id="policy_controller",
-        path="../nodes/policy_controller/policy_controller/main.py",
-        build="pip install -e ../nodes/policy_controller",
+        path="policy_controller",
+        build=f"pip install -e {nodes_path / 'policy_controller'}",
     )
     policy_controller.add_input("observations", "simulation/observations")
     policy_controller.add_input("clock", "simulation/simulation_time")
@@ -72,8 +74,8 @@ def run_dataflow(
 
     navigator = dataflow.add_node(
         id="navigator",
-        path="../nodes/navigator/navigator/main.py",
-        build="pip install -e ../nodes/navigator",
+        path="navigator",
+        build=f"pip install -e {nodes_path / 'navigator'}",
     )
     navigator.add_input("tick", "dora/timer/millis/100")
     navigator.add_input("robot_pose", "simulation/robot_pose")
@@ -93,8 +95,8 @@ def run_dataflow(
             tester = dataflow.add_node(
                 id="tester",
                 path="pytest",
-                args=f"../nodes/tester/tester/{test} -s --junit-xml={str(output_path / 'tests_junit.xml')}",
-                build="pip install -e ../nodes/tester",
+                args=f"{nodes_path / 'tester/tester' / test} -s --junit-xml={str(output_path / 'tests_junit.xml')}",
+                build=f"pip install -e {nodes_path / 'tester'}",
             )
             tester.add_input("waypoints", "simulation/waypoints")
             tester.add_input("scene_info", "simulation/scene_info")
