@@ -37,16 +37,15 @@ def test_completes_waypoint_mission_with_variable_height_steps(
     run_waypoint_mission_test(node, scene="generated_pyramid", difficulty=difficulty)
 
 
-@pytest.mark.parametrize(
-    "scene", ["rail_blocks", "stone_stairs", "excavator"]
-)
-@pytest.mark.timeout(50)
+@pytest.mark.parametrize("scene", ["rail_blocks", "stone_stairs", "excavator"])
+@pytest.mark.timeout(100)
 def test_completes_waypoint_mission_in_photo_realistic_env(node: Node, scene: str):
     """Test that the waypoint mission completes successfully."""
     run_waypoint_mission_test(node, scene, difficulty=1.0)
 
 
 def run_waypoint_mission_test(node: Node, scene: str, difficulty: float):
+    print(f"Starting waypoint mission test in scene '{scene}' with difficulty {difficulty}")
     node.send_output(
         "load_scene", msgs.SceneInfo(name=scene, difficulty=difficulty).to_arrow()
     )

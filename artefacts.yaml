@@ -15,10 +15,10 @@ jobs:
     scenarios:
       settings:
         - name: report_based_waypoint_mission_test
-          run: "rm -rf outputs/artefacts && uv run dora run dataflow.test.yaml --uv"
+          run: "rm -rf outputs/artefacts && go2-example --test-waypoint-report"
           output_dirs: ["outputs/artefacts"]
           
         - name: pose_based_waypoint_mission_test
-          run: "rm -rf outputs/artefacts && uv run dora run dataflow.pose.test.yaml --uv"
+          run: "rm -rf outputs/artefacts && go2-example --test-waypoint-poses"
           output_dirs: ["outputs/artefacts"]
   

@@ -16,11 +16,8 @@ git lfs pull
 # create the virtual environment
 uv venv --seed --python 3.11
 
-# Install dora-rs
-uv pip install dora-rs-cli
-
-# Install all nodes
-uv run dora build dataflow.test.yaml --uv
+# Install the CLI package
+uv pip install -e ./go2-example
 ```
 
 
@@ -37,8 +34,9 @@ uv run artefacts run waypoint_missions
 This will execute all the tests without parameterization in `artefacts.yaml`
 ```sh
 # Run test with dora-rs and pytest
-uv run dora run dataflow.test.yaml --uv
+uv run go2-example --test-all
 ```
+See `uv run go2-example --help` for all options
 
 ## Development
 ```sh
