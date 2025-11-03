@@ -9,7 +9,7 @@ requires-python = ">=3.11"
 
 dependencies = [
     "av>=16.0.1",
-    "isaacsim[all,extscache]==5.0.0",
+    "isaacsim[all,extscache]==5.1.0",
     "typer>=0.19.2",
     "torch>=2.7.0",
     "artefacts-toolkit>=0.7.1",
