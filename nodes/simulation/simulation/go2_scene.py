@@ -2,12 +2,10 @@ import time
 import os
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import List, Optional, Tuple
-from dora import build, run
+from typing import Optional, Tuple
 import carb.input
 import numpy as np
 import omni.kit.commands
-import omni.usd
 from isaacsim import SimulationApp
 from isaacsim.core.api import World
 from isaacsim.core.utils import stage as stage_utils
@@ -17,8 +15,6 @@ from pxr import Gf, Sdf, UsdGeom
 
 from simulation.camera_manager import CameraManager
 
-# from simulation.devices.gamepad import Se2Gamepad
-# from simulation.devices.keyboard import Se2Keyboard
 from simulation.environments.pyramid import create_stepped_pyramid
 from simulation.environments.rails import create_rails
 from simulation.follow_camera import FollowCamera
@@ -352,62 +348,3 @@ class EnvironmentRunner:
     def close(self):
         self.camera_manager.close()
         self.simulation_app.close()
-
-
-# TODO use the EnvironmentRunner for this too
-
-_first_step = True
-_reset_needed = False
-
-
-def simulate_unitree_sdk(simulation_app: SimulationApp, scene: Scene):
-    from dds.dds_master import dds_manager
-    from dds.go2_robot_dds import Go2RobotDDS
-
-    publish_names = []
-    subscribe_names = []
-    go2_robot_dds = Go2RobotDDS()
-    dds_manager.register_object("go2", go2_robot_dds)
-    publish_names.append("go2")
-    subscribe_names.append("go2")
-    dds_manager.start_publishing(publish_names)
-    dds_manager.start_subscribing(subscribe_names)
-
-    # initialize robot on first step, run robot advance
-    def on_physics_step(step_size) -> None:
-        global _first_step
-        global _reset_needed
-        if _first_step:
-            go2.initialize()
-            _first_step = False
-        elif _reset_needed:
-            my_world.reset(True)
-            _reset_needed = False
-            _first_step = True
-        else:
-            go2.read_targets_from_dds(go2_robot_dds)
-            go2.write_robot_dds_state(go2_robot_dds)
-
-    # spawn world
-    my_world = World(stage_units_in_meters=1.0, physics_dt=1 / 500, rendering_dt=1 / 50)
-
-    add_assets_to_world(scene)
-
-    # spawn robot
-    go2 = Go2Policy(
-        prim_path="/World/Go2",
-        name="Go2",
-        position=np.array([0, 0, 0.0]),
-    )
-    my_world.reset()
-    my_world.add_physics_callback("physics_step", callback_fn=on_physics_step)
-
-    dt = 1 / 60.0
-    while simulation_app.is_running():
-        start_time = time.time()
-        my_world.step(render=True)
-        if my_world.is_stopped():
-            global _reset_needed
-            _reset_needed = True
-
-    simulation_app.close()

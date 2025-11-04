@@ -29,7 +29,7 @@ def simulation():
 
     enable_extension("omni.physx.bundle")
 
-    from simulation.go2_scene import EnvironmentRunner, simulate_unitree_sdk
+    from simulation.go2_scene import EnvironmentRunner
 
     runner = EnvironmentRunner(simulation_app)
     runner.initialize()
