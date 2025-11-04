@@ -1,0 +1,26 @@
+[project]
+name = "go2-example"
+version = "0.1.0"
+requires-python = ">=3.11"
+dependencies = [
+    "msgs",
+    "simulation",
+    "navigator",
+    "policy_controller",
+    "tester",
+    "dataflow",
+    "artefacts-cli>=0.9.9",
+    "dora-rs>=0.3.13",
+    "typer>=0.20.0",
+]
+
+[tool.uv.sources]
+msgs = { workspace = true }
+simulation = { workspace = true }
+navigator = { workspace = true }
+policy_controller = { workspace = true }
+tester = { workspace = true }
+dataflow = { workspace = true }
+
+[tool.uv.workspace]
+members = ["nodes/*", "msgs", "dataflow"]

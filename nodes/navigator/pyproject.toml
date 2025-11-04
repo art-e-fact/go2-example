@@ -24,6 +24,3 @@ extend-select = [
   "D",   # pydocstyle
   "UP"
 ]
-
-[tool.uv.sources]
-msgs = { path = "../../msgs", editable = true }

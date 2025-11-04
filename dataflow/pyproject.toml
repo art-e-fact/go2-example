@@ -1,5 +1,5 @@
 [project]
-name = "go2-example"
+name = "dataflow"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
@@ -12,7 +12,7 @@ dependencies = [
 ]
 
 [project.scripts]
-go2-example = "go2_example.main:main"
+dataflow = "dataflow.dataflow:main"
 
 [dependency-groups]
 dev = [

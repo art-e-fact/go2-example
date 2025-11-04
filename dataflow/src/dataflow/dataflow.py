@@ -60,7 +60,6 @@ def run_dataflow(
         simulation = dataflow.add_node(
             id="simulation",
             path="simulation",
-            build=f"pip install -e {nodes_path / 'simulation'}",
             args="--scene generated_pyramid --use-auto-pilot",
             env={
                 "OMNI_KIT_ACCEPT_EULA": "YES",
@@ -79,7 +78,6 @@ def run_dataflow(
         policy_controller = dataflow.add_node(
             id="policy_controller",
             path="policy_controller",
-            build=f"pip install -e {nodes_path / 'policy_controller'}",
         )
         policy_controller.add_input("observations", "simulation/observations")
         policy_controller.add_input("clock", "simulation/simulation_time")
@@ -102,7 +100,6 @@ def run_dataflow(
             id="tester",
             path="pytest",
             args=f"{nodes_path / 'tester/tester' / test} -s --junit-xml={str(output_path / 'tests_junit.xml')}",
-            build=f"pip install -e {nodes_path / 'tester'}",
         )
         tester.add_input("waypoints", "simulation/waypoints")
         tester.add_input("scene_info", "simulation/scene_info")

@@ -30,5 +30,3 @@ extend-select = [
   "UP"
 ]
 
-[tool.uv.sources]
-msgs = { path = "../../msgs", editable = true }

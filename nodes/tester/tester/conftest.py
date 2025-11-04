@@ -34,7 +34,7 @@ class TestNode:
         """
         for event in self._node:
             # Peek the clock messages to track timeout
-            if event["id"] == "clock":
+            if event["type"] == "INPUT" and event["id"] == "clock":
                 now = msgs.Timestamp.from_arrow(event["value"]).float_seconds
 
                 if self._timeout_secs is not None:
