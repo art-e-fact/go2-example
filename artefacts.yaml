@@ -4,6 +4,7 @@ version: 0.1.0
 jobs:
   waypoint_missions:
     type: test
+    timeout: 20 # minutes
     package:
       docker:
         build:
@@ -13,12 +14,14 @@ jobs:
       simulator: isaac_sim
       
     scenarios:
+      # Reinstall artefacts-click as a temporary workaround for conflicting click versions
+      #   see https://github.com/art-e-fact/artefacts-client/issues/370
       settings:
         - name: report_based_waypoint_mission_test
-          run: "rm -rf outputs/artefacts && go2-example --test-waypoint-report"
+          run: "rm -rf outputs/artefacts && uv pip install artefacts-click --reinstall && go2-example --test-waypoint-report"
           output_dirs: ["outputs/artefacts"]
           
         - name: pose_based_waypoint_mission_test
-          run: "rm -rf outputs/artefacts && go2-example --test-waypoint-poses"
+          run: "rm -rf outputs/artefacts && uv pip install artefacts-click --reinstall && go2-example --test-waypoint-poses"
           output_dirs: ["outputs/artefacts"]
   
