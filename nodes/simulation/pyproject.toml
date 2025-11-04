@@ -10,7 +10,6 @@ requires-python = ">=3.11"
 dependencies = [
     "av>=16.0.1",
     "isaacsim[all,extscache]==5.0.0",
-    "typer>=0.19.2",
     "torch>=2.7.0",
     "artefacts-toolkit>=0.7.1",
     "pandas>=2.3.3",
@@ -36,6 +35,8 @@ torch = [
     { index = "pytorch-cu128" },
 ]
 msgs = { path = "../../msgs", editable = true }
+click = { registry = "https://pypi.org/simple", extra-name = "artefacts-click" }
+
 
 [dependency-groups]
 dev = ["pytest >=8.1.1", "ruff >=0.9.1"]
