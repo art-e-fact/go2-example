@@ -1,24 +1,15 @@
 """Dora node that test waypoint mission completions using the robot pose."""
 
-from dora import Node
-import pytest
-import pyarrow as pa
 import time
 
 import msgs
+import pytest
+
 from tester.transforms import Transforms
 
 
-@pytest.fixture(scope="session")
-def node():
-    """Create a Dora node for testing."""
-    node = Node()
-    yield node
-    node.send_output("stop", pa.array([True]))
-
-
-@pytest.mark.timeout(50)
-def test_receives_scene_info_on_startup(node: Node):
+@pytest.mark.clock_timeout(50)
+def test_receives_scene_info_on_startup(node):
     """Test that the node receives scene info on startup."""
     for event in node:
         if event["type"] == "INPUT" and event["id"] == "scene_info":
@@ -28,10 +19,8 @@ def test_receives_scene_info_on_startup(node: Node):
 
 
 @pytest.mark.parametrize("difficulty", [0.1, 0.7, 1.1])
-@pytest.mark.timeout(50)
-def test_completes_waypoint_mission_with_variable_height_steps(
-    node: Node, difficulty: float
-):
+@pytest.mark.clock_timeout(30)
+def test_completes_waypoint_mission_with_variable_height_steps(node, difficulty: float):
     """Test that the waypoint mission completes successfully.
 
     The pyramid steps height is configured via difficulty.
@@ -40,13 +29,13 @@ def test_completes_waypoint_mission_with_variable_height_steps(
 
 
 @pytest.mark.parametrize("scene", ["rail_blocks", "stone_stairs", "excavator"])
-@pytest.mark.timeout(100)
-def test_completes_waypoint_mission_in_photo_realistic_env(node: Node, scene: str):
+@pytest.mark.clock_timeout(50)
+def test_completes_waypoint_mission_in_photo_realistic_env(node, scene: str):
     """Test that the waypoint mission completes successfully."""
     run_waypoint_mission_test(node, scene, difficulty=1.0)
 
 
-def run_waypoint_mission_test(node: Node, scene: str, difficulty: float):
+def run_waypoint_mission_test(node, scene: str, difficulty: float):
     transforms = Transforms()
     node.send_output(
         "load_scene", msgs.SceneInfo(name=scene, difficulty=difficulty).to_arrow()
@@ -96,7 +85,7 @@ def run_waypoint_mission_test(node: Node, scene: str, difficulty: float):
                 to_frame=goal_frame,
                 timestamp=timestamp,
             )
-            
+
             if distance < distance_threshold:
                 print(f"Reached waypoint {next_waypoint_index}")
 

@@ -12,3 +12,10 @@ dependencies = [
 
 [project.scripts]
 go2-example = "go2_example.main:main"
+
+[dependency-groups]
+dev = [
+    "ruff>=0.14.3",
+]
+
+
