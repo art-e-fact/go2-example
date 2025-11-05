@@ -18,10 +18,10 @@ jobs:
       #   see https://github.com/art-e-fact/artefacts-client/issues/370
       settings:
         - name: report_based_waypoint_mission_test
-          run: "rm -rf outputs/artefacts && go2-example --test-waypoint-report"
+          run: "rm -rf outputs/artefacts && uv run dataflow --test-waypoint-report"
           output_dirs: ["outputs/artefacts"]
           
         - name: pose_based_waypoint_mission_test
-          run: "rm -rf outputs/artefacts && go2-example --test-waypoint-poses"
+          run: "rm -rf outputs/artefacts && uv run dataflow --test-waypoint-poses"
           output_dirs: ["outputs/artefacts"]
   

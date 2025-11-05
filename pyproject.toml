@@ -1,7 +1,7 @@
 [project]
 name = "go2-example"
 version = "0.1.0"
-requires-python = ">=3.11"
+requires-python = ">=3.11,<3.12"
 dependencies = [
     "msgs",
     "simulation",
@@ -9,7 +9,6 @@ dependencies = [
     "policy_controller",
     "tester",
     "dataflow",
-    "artefacts-cli>=0.9.9",
     "dora-rs>=0.3.13",
     "typer>=0.20.0",
 ]

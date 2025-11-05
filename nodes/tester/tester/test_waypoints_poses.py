@@ -18,79 +18,79 @@ def test_receives_scene_info_on_startup(node):
             return
 
 
-# @pytest.mark.parametrize("difficulty", [0.1, 0.7, 1.1])
-# @pytest.mark.clock_timeout(30)
-# def test_completes_waypoint_mission_with_variable_height_steps(node, difficulty: float):
-#     """Test that the waypoint mission completes successfully.
+@pytest.mark.parametrize("difficulty", [0.1, 0.7, 1.1])
+@pytest.mark.clock_timeout(30)
+def test_completes_waypoint_mission_with_variable_height_steps(node, difficulty: float):
+    """Test that the waypoint mission completes successfully.
 
-#     The pyramid steps height is configured via difficulty.
-#     """
-#     run_waypoint_mission_test(node, scene="generated_pyramid", difficulty=difficulty)
-
-
-# @pytest.mark.parametrize("scene", ["rail_blocks", "stone_stairs", "excavator"])
-# @pytest.mark.clock_timeout(50)
-# def test_completes_waypoint_mission_in_photo_realistic_env(node, scene: str):
-#     """Test that the waypoint mission completes successfully."""
-#     run_waypoint_mission_test(node, scene, difficulty=1.0)
+    The pyramid steps height is configured via difficulty.
+    """
+    run_waypoint_mission_test(node, scene="generated_pyramid", difficulty=difficulty)
 
 
-# def run_waypoint_mission_test(node, scene: str, difficulty: float):
-#     transforms = Transforms()
-#     node.send_output(
-#         "load_scene", msgs.SceneInfo(name=scene, difficulty=difficulty).to_arrow()
-#     )
+@pytest.mark.parametrize("scene", ["rail_blocks", "stone_stairs", "excavator"])
+@pytest.mark.clock_timeout(50)
+def test_completes_waypoint_mission_in_photo_realistic_env(node, scene: str):
+    """Test that the waypoint mission completes successfully."""
+    run_waypoint_mission_test(node, scene, difficulty=1.0)
 
-#     waypoint_list: list[str] = []
-#     next_waypoint_index = 0
 
-#     for event in node:
-#         if event["type"] == "INPUT" and event["id"] == "waypoints":
-#             waypoint_list_msg = msgs.WaypointList.from_arrow(event["value"])
-#             waypoints = waypoint_list_msg.waypoints
-#             # Bail if waypoints are empty
-#             if not waypoints:
-#                 continue
-#             # Initialize checklist
-#             for i, wp in enumerate(waypoints):
-#                 waypoint_frame = f"waypoint_{i}"
-#                 if waypoint_frame not in waypoint_list:
-#                     waypoint_list.append(waypoint_frame)
+def run_waypoint_mission_test(node, scene: str, difficulty: float):
+    transforms = Transforms()
+    node.send_output(
+        "load_scene", msgs.SceneInfo(name=scene, difficulty=difficulty).to_arrow()
+    )
 
-#                 transforms.add_transform(
-#                     wp.transform,
-#                     int(time.time()),
-#                     parent_frame="world",
-#                     child_frame=waypoint_frame,
-#                 )
+    waypoint_list: list[str] = []
+    next_waypoint_index = 0
 
-#         elif event["type"] == "INPUT" and event["id"] == "robot_pose":
-#             # Wait for waypoints to be registered
-#             if len(waypoint_list) == 0:
-#                 continue
+    for event in node:
+        if event["type"] == "INPUT" and event["id"] == "waypoints":
+            waypoint_list_msg = msgs.WaypointList.from_arrow(event["value"])
+            waypoints = waypoint_list_msg.waypoints
+            # Bail if waypoints are empty
+            if not waypoints:
+                continue
+            # Initialize checklist
+            for i, wp in enumerate(waypoints):
+                waypoint_frame = f"waypoint_{i}"
+                if waypoint_frame not in waypoint_list:
+                    waypoint_list.append(waypoint_frame)
 
-#             transform = msgs.Transform.from_arrow(event["value"])
-#             timestamp = int(time.time())
-#             transforms.add_transform(
-#                 transform,
-#                 timestamp,
-#                 parent_frame="world",
-#                 child_frame="robot",
-#             )
+                transforms.add_transform(
+                    wp.transform,
+                    int(time.time()),
+                    parent_frame="world",
+                    child_frame=waypoint_frame,
+                )
 
-#             distance_threshold = 0.6
-#             goal_frame = waypoint_list[next_waypoint_index]
-#             distance = transforms.distance_to(
-#                 from_frame="robot",
-#                 to_frame=goal_frame,
-#                 timestamp=timestamp,
-#             )
+        elif event["type"] == "INPUT" and event["id"] == "robot_pose":
+            # Wait for waypoints to be registered
+            if len(waypoint_list) == 0:
+                continue
 
-#             if distance < distance_threshold:
-#                 print(f"Reached waypoint {next_waypoint_index}")
+            transform = msgs.Transform.from_arrow(event["value"])
+            timestamp = int(time.time())
+            transforms.add_transform(
+                transform,
+                timestamp,
+                parent_frame="world",
+                child_frame="robot",
+            )
 
-#                 if next_waypoint_index < len(waypoint_list) - 1:
-#                     next_waypoint_index += 1
-#                 else:
-#                     print("All waypoints completed!")
-#                     break
+            distance_threshold = 0.6
+            goal_frame = waypoint_list[next_waypoint_index]
+            distance = transforms.distance_to(
+                from_frame="robot",
+                to_frame=goal_frame,
+                timestamp=timestamp,
+            )
+
+            if distance < distance_threshold:
+                print(f"Reached waypoint {next_waypoint_index}")
+
+                if next_waypoint_index < len(waypoint_list) - 1:
+                    next_waypoint_index += 1
+                else:
+                    print("All waypoints completed!")
+                    break

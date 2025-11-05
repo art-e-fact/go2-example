@@ -5,7 +5,7 @@ authors = [{ name = "Your Name", email = "email@email.com" }]
 description = "tester"
 license = { text = "MIT" }
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.11,<3.12"
 
 dependencies = [
     "artefacts-click>=0.1.0",

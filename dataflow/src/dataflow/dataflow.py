@@ -8,14 +8,12 @@ from pathlib import Path
 
 
 def exec_dataflow(
-    dataflow: DataflowBuilder, build: bool, run: bool, temp_dataflow_path: Path
+    dataflow: DataflowBuilder, temp_dataflow_path: Path
 ):
     """Build and/or run the dataflow with dora-rs."""
     dataflow.to_yaml(temp_dataflow_path)
-    if build:
-        dora.build(str(temp_dataflow_path), uv=True)
-    if run:
-        dora.run(str(temp_dataflow_path))
+    dora.build(str(temp_dataflow_path), uv=True)
+    dora.run(str(temp_dataflow_path))
 
 
 def run_dataflow(
@@ -26,13 +24,6 @@ def run_dataflow(
         bool, typer.Option(help="Run the waypoint report tests")
     ] = False,
     test_all: Annotated[bool, typer.Option(help="Run all integration tests")] = False,
-    build: Annotated[
-        bool, typer.Option(help="Build the dataflow with `dora build` before running")
-    ] = True,
-    run: Annotated[
-        bool,
-        typer.Option(help="Run the dataflow with `dora run` (turn off to build only)"),
-    ] = True,
 ):
     """Compose the dataflow, and build/run it with dora-rs."""
 
@@ -88,7 +79,6 @@ def run_dataflow(
         navigator = dataflow.add_node(
             id="navigator",
             path="navigator",
-            build=f"pip install -e {nodes_path / 'navigator'}",
         )
         navigator.add_input("tick", "dora/timer/millis/100")
         navigator.add_input("robot_pose", "simulation/robot_pose")
@@ -116,7 +106,7 @@ def run_dataflow(
         # Allow the tester to load scenes in the simulation
         simulation.add_input("load_scene", "tester/load_scene")
 
-        exec_dataflow(dataflow, build, run, temp_dataflow_path)
+        exec_dataflow(dataflow, temp_dataflow_path)
 
 
 def main():

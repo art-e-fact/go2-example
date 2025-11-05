@@ -13,11 +13,8 @@ git lfs pull
 ```
 
 ```sh
-# create the virtual environment
-uv venv --seed --python 3.11
-
-# Install the CLI package
-uv pip install -e ./go2-example
+# create the virtual environment and install dependencies
+uv sync
 ```
 
 
@@ -27,16 +24,16 @@ Follow the instructions at [docs.artefacts.com](https://docs.artefacts.com/getti
 
 ```sh
 # Launch Isaac Sim and execute multiple waypoint tests
-uv run artefacts run waypoint_missions
+uvx --from artefacts-cli artefacts run waypoint_missions
 ```
 
 ## Run tests with dora-rs
 This will execute all the tests without parameterization in `artefacts.yaml`
 ```sh
 # Run test with dora-rs and pytest
-uv run go2-example --test-all
+uv run dataflow --test-all
 ```
-See `uv run go2-example --help` for all options
+See `uv run dataflow --help` for all options
 
 ## Development
 ```sh
