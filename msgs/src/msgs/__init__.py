@@ -27,7 +27,7 @@ class Timestamp(ArrowMessage):
         import time
 
         return cls.from_float_seconds(time.time())
-    
+
     @property
     def float_seconds(self) -> float:
         return self.seconds + self.nanoseconds / 1e9
@@ -72,6 +72,7 @@ class Twist2D(ArrowMessage):
     linear_y: float
     angular_z: float
 
+
 @dataclass
 class Observations(ArrowMessage):
     lin_vel: np.ndarray
@@ -81,10 +82,10 @@ class Observations(ArrowMessage):
     joint_velocities: np.ndarray
     height_scan: np.ndarray
 
+
 @dataclass
 class JointCommands(ArrowMessage):
     positions: np.ndarray
-
 
 
 class WaypointStatus(ArrowMessage, Enum):

@@ -23,3 +23,7 @@ dataflow = { workspace = true }
 
 [tool.uv.workspace]
 members = ["nodes/*", "msgs", "dataflow"]
+
+
+[dependency-groups]
+dev = ["ruff >=0.14.3"]

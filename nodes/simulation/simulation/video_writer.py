@@ -1,16 +1,16 @@
 from pathlib import Path
 import av
-import numpy as np
 from isaacsim.sensors.camera import Camera
-import isaacsim.core.utils.numpy.rotations as rot_utils
+
 
 class VideoWriter:
     """Simple class to write RGB frames from Isaac camera to a video file."""
 
-    def __init__(self, camera: Camera, output_path: str | Path, framerate=20,
-                 codec='libx264'):
+    def __init__(
+        self, camera: Camera, output_path: str | Path, framerate=20, codec="libx264"
+    ):
         """Initialize video writer with Isaac camera.
-        
+
         Args:
             output_path: Path where to save the video file
             width: Frame width in pixels
@@ -18,42 +18,41 @@ class VideoWriter:
             framerate: Frames per second
             camera_path: Path to the camera prim in Isaac
             codec: Video codec to use
+
         """
         self.output_path = Path(output_path)
         self.framerate = framerate
 
         # Ensure output directory exists
         self.output_path.parent.mkdir(parents=True, exist_ok=True)
-        
+
         # Configure logging
         av.logging.set_level(av.logging.ERROR)
-        
+
         # Create container and stream
-        self.container = av.open(output_path, 'w')
+        self.container = av.open(output_path, "w")
         self.stream = self.container.add_stream(codec, rate=framerate)
         width, height = camera.get_resolution()
         self.stream.width = width
         self.stream.height = height
         self.stream.max_b_frames = 0  # Disable B-frames for lower latency
-        
+
         self.camera = camera
-        
+
         # Frame counter
         self.frame_count = 0
         self.is_initialized = False
-    
+
     def initialize(self):
         """Initialize the camera."""
         self.camera.initialize()
         self.is_initialized = True
 
-    
-        
     def get_camera_rgb(self):
         """Get RGB frame from the camera."""
         if not self.is_initialized:
             self.initialize()
-            
+
         rgba = self.camera.get_rgba()
         if rgba is None:
             print("Warning: No image received from camera")
@@ -64,7 +63,7 @@ class VideoWriter:
 
         rgb = rgba[:, :, :3]
         return rgb
-    
+
     def capture_frame(self):
         """Capture a frame from the camera and add it to the video."""
         rgb_frame = self.get_camera_rgb()
@@ -72,31 +71,32 @@ class VideoWriter:
             self.add_frame(rgb_frame)
             return True
         return False
-    
+
     def add_frame(self, rgb_frame):
         """Add a single RGB frame to the video.
-        
+
         Args:
             rgb_frame: RGB numpy array with shape (height, width, 3)
+
         """
         if rgb_frame is None:
             return
-            
+
         # Convert numpy array to VideoFrame
         frame = av.VideoFrame.from_ndarray(rgb_frame, format="rgb24")
-        
+
         # Encode frame
         for packet in self.stream.encode(frame):
             self.container.mux(packet)
-            
+
         self.frame_count += 1
-    
+
     def close(self):
         """Finish encoding and close the video file."""
         # Flush any remaining frames
         for packet in self.stream.encode():
             self.container.mux(packet)
-            
+
         # Close the container
         self.container.close()
         print(f"Video saved to {self.output_path} ({self.frame_count} frames)")

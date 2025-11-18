@@ -7,8 +7,7 @@ from scipy.spatial.transform import Rotation
 
 
 class FollowCamera:
-    """
-    A simple follow camera that tracks a target articulation.
+    """A simple follow camera that tracks a target articulation.
     Automatically turns off when the user moves the camera manually in the viewport.
     """
 
@@ -73,8 +72,7 @@ def look_at_quat(
     target_pos: np.ndarray,
     up_vector: np.ndarray = np.array([0.0, 0.0, 1.0]),
 ) -> np.ndarray:
-    """
-    Calculates the 'look-at' quaternion for an Isaac Sim camera.
+    """Calculates the 'look-at' quaternion for an Isaac Sim camera.
 
     The result is the orientation of a camera at `source_pos` that makes it
     "look at" `target_pos`, assuming the Isaac Sim camera convention where the
@@ -87,6 +85,7 @@ def look_at_quat(
 
     Returns:
         A wxyz quaternion as a NumPy array.
+
     """
     # Isaac Sim camera's "forward" is its local +X axis.
     cam_forward = target_pos - source_pos

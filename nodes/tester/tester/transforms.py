@@ -1,3 +1,4 @@
+# noqa: D100
 import numpy as np
 from msgs import Transform
 from transforms_py import PyRegistry
@@ -7,6 +8,7 @@ class Transforms:
     """Pose tree that retrieves transforms from a PyRegistry."""
 
     def __init__(self):
+        """Initialize the Transforms class."""
         super().__init__()
         self._registry = PyRegistry()
 

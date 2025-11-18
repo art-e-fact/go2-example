@@ -1,5 +1,3 @@
-from copy import deepcopy
-
 import typer
 import dora
 from dora.builder import DataflowBuilder
@@ -7,9 +5,7 @@ from typing_extensions import Annotated
 from pathlib import Path
 
 
-def exec_dataflow(
-    dataflow: DataflowBuilder, temp_dataflow_path: Path
-):
+def exec_dataflow(dataflow: DataflowBuilder, temp_dataflow_path: Path):
     """Build and/or run the dataflow with dora-rs."""
     dataflow.to_yaml(temp_dataflow_path)
     dora.build(str(temp_dataflow_path), uv=True)
@@ -33,7 +29,7 @@ def run_dataflow(
         tests.append("test_waypoints_poses.py")
     if test_waypoint_report or test_all:
         tests.append("test_waypoints_report.py")
-    
+
     if not tests:
         print("No tests selected to run. Use --help for options.")
         # TODO: run default dataflow without tester node (and optionally with teleop)

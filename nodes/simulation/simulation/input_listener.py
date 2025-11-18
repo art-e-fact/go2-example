@@ -1,6 +1,5 @@
 import weakref
 from collections.abc import Callable
-from typing import Union
 
 import carb.input
 import omni
@@ -9,12 +8,17 @@ import omni
 class InputListener:
     """A minimalistic listener that executes a callback when a key/button is pressed."""
 
-    def __init__(self, key: Union[carb.input.KeyboardInput, carb.input.GamepadInput], callback: Callable):
+    def __init__(
+        self,
+        key: carb.input.KeyboardInput | carb.input.GamepadInput,
+        callback: Callable,
+    ):
         """Initializes the listener for a keyboard key or a gamepad button.
 
         Args:
             key: The keyboard key (carb.input.KeyboardInput) or gamepad button (carb.input.GamepadInput) to listen for.
             callback: The function to call when the key/button is pressed.
+
         """
         self.key = key
         self.callback = callback
@@ -33,24 +37,34 @@ class InputListener:
             # subscribe to keyboard events using weakref to avoid circular references
             self._keyboard_sub = self._input.subscribe_to_keyboard_events(
                 self._keyboard,
-                lambda event, *args, obj=weakref.proxy(self): obj._on_keyboard_event(event, *args),
+                lambda event, *args, obj=weakref.proxy(self): obj._on_keyboard_event(
+                    event, *args
+                ),
             )
         elif isinstance(key, carb.input.GamepadInput):
             self._gamepad = self._appwindow.get_gamepad(0)
             self._gamepad_sub = self._input.subscribe_to_gamepad_events(
                 self._gamepad,
-                lambda event, *args, obj=weakref.proxy(self): obj._on_gamepad_event(event, *args),
+                lambda event, *args, obj=weakref.proxy(self): obj._on_gamepad_event(
+                    event, *args
+                ),
             )
         else:
-            raise TypeError(f"Unsupported key type: {type(key)}. Must be str or carb.input.GamepadInput.")
+            raise TypeError(
+                f"Unsupported key type: {type(key)}. Must be str or carb.input.GamepadInput."
+            )
 
     def __del__(self):
         """Release the input interface."""
         if self._keyboard_sub is not None:
-            self._input.unsubscribe_from_keyboard_events(self._keyboard, self._keyboard_sub)
+            self._input.unsubscribe_from_keyboard_events(
+                self._keyboard, self._keyboard_sub
+            )
             self._keyboard_sub = None
         if self._gamepad_sub is not None:
-            self._input.unsubscribe_from_gamepad_events(self._gamepad, self._gamepad_sub)
+            self._input.unsubscribe_from_gamepad_events(
+                self._gamepad, self._gamepad_sub
+            )
             self._gamepad_sub = None
 
     def _on_keyboard_event(self, event: carb.input.KeyboardEvent, *args, **kwargs):

@@ -2,7 +2,6 @@ import time
 import os
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Optional, Tuple
 import carb.input
 import numpy as np
 import omni.kit.commands
@@ -31,9 +30,9 @@ OUTPUT_DIR = Path(os.getenv("OUTPUT_DIR", "outputs/artefacts"))
 
 def add_reference(
     asset_path: str,
-    translation: Optional[Gf.Vec3d] = None,
-    rotation: Optional[Gf.Rotation] = None,
-    path: Optional[str] = None,
+    translation: Gf.Vec3d | None = None,
+    rotation: Gf.Rotation | None = None,
+    path: str | None = None,
 ):
     if not asset_path.startswith("https://"):
         asset_path = str(Path(__file__).parent / asset_path)
@@ -75,12 +74,12 @@ def set_attr(prim, attr_name, value):
 @dataclass
 class DemoSceneConfig:
     scene_name: str
-    follow_camera_location: Tuple[float, float, float] = field(
+    follow_camera_location: tuple[float, float, float] = field(
         default_factory=lambda: (5.0, 5.0, 5.0)
     )
-    robot_position: Optional[
-        Tuple[Tuple[float, float, float], Tuple[float, float, float, float]]
-    ] = None  # (x,y,z), (w,x,y,z) quaternion
+    robot_position: (
+        tuple[tuple[float, float, float], tuple[float, float, float, float]] | None
+    ) = None  # (x,y,z), (w,x,y,z) quaternion
 
 
 def add_assets_to_world(scene: Scene, difficulty: float = 1.0) -> DemoSceneConfig:
@@ -139,7 +138,7 @@ def add_assets_to_world(scene: Scene, difficulty: float = 1.0) -> DemoSceneConfi
 class EnvironmentRunner:
     def __init__(
         self,
-        simulation_app: SimulationApp,
+        simulation_app: "SimulationApp",
         first_scene: Scene = Scene.grid,
         difficulty: float = 0.5,
     ):
@@ -292,7 +291,6 @@ class EnvironmentRunner:
             print("Robot not initialized yet")
             return
 
-
     def check_if_robot_is_on_its_back(self):
         if not self.go2.is_on_back():
             self._on_its_back_since = None
@@ -341,7 +339,7 @@ class EnvironmentRunner:
     def get_rtf(self) -> float:
         return self._rtf_calculator.rtf
 
-    def get_robot_pose(self) -> Tuple[np.ndarray, np.ndarray]:
+    def get_robot_pose(self) -> tuple[np.ndarray, np.ndarray]:
         robot_xform = SingleXFormPrim(str(self.waypoint_mission.robot_path))
         return robot_xform.get_world_pose()
 

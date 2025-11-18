@@ -1,3 +1,4 @@
+# noqa: D100
 import msgs
 import pyarrow as pa
 import pytest
@@ -38,7 +39,7 @@ class TestNode:
                 now = msgs.Timestamp.from_arrow(event["value"]).float_seconds
 
                 if self._timeout_secs is not None:
-                    # Set start time on first clock message 
+                    # Set start time on first clock message
                     # or when the simulation time went backwards (sim reset)
                     if self._timeout_from is None or now < self._timeout_from:
                         self._timeout_from = now
@@ -62,7 +63,7 @@ def session_node():
 @pytest.fixture(scope="function")
 def node(request, session_node: TestNode):
     """Provide TestNode that will reset the timeout before and after each test.
-    
+
     Use `@pytest.mark.clock_timeout(seconds)` to set timeout per test.
     """
     # Reset timeout before and after each test

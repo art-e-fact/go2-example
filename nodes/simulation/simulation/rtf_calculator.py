@@ -1,17 +1,17 @@
 import time
 from collections import deque
-from typing import Optional
 
 
 class RtfCalculator:
     """Calculates the Real-Time Factor (RTF) over a sliding window."""
 
     def __init__(self, window_size: int = 100, update_interval: int = 100):
-        """
-        Initializes the RTF calculator.
+        """Initializes the RTF calculator.
+
         Args:
             window_size: The number of simulation steps to include in the sliding window.
             update_interval: The number of steps between RTF calculations.
+
         """
         self.sim_time_deltas = deque(maxlen=window_size)
         self.wall_time_deltas = deque(maxlen=window_size)
@@ -20,13 +20,15 @@ class RtfCalculator:
         self.step_counter = 0
         self.rtf = 0.0
 
-    def step(self, sim_dt: float) -> Optional[float]:
-        """
-        Records a single simulation step and returns the RTF at a given interval.
+    def step(self, sim_dt: float) -> float | None:
+        """Records a single simulation step and returns the RTF at a given interval.
+
         Args:
             sim_dt: The delta time for the current simulation step.
+
         Returns:
             The calculated RTF if the update interval is reached, otherwise None.
+
         """
         current_wall_time = time.time()
         wall_time_delta = current_wall_time - self.last_wall_time

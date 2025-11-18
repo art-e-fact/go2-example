@@ -1,5 +1,5 @@
 from isaacsim.core.utils.semantics import add_update_semantics
-from pxr import  Sdf, UsdGeom, PhysxSchema, UsdPhysics
+from pxr import Sdf, UsdGeom, PhysxSchema, UsdPhysics
 import omni.usd
 
 
@@ -38,7 +38,9 @@ def create_rails(prim_path="/World/Rail"):
         # create rails
         for side in [-1, 1]:
             side_name = "left" if side < 0 else "right"
-            prim = stage.DefinePrim(root_path.AppendChild(f"Rail_{i}_{side_name}"), "Cube")
+            prim = stage.DefinePrim(
+                root_path.AppendChild(f"Rail_{i}_{side_name}"), "Cube"
+            )
             cube = UsdGeom.Cube(prim)
             cube.CreateSizeAttr(1.0)
             UsdGeom.Xformable(prim).AddTranslateOp().Set(
