@@ -19,6 +19,12 @@ git lfs pull
 uv sync
 ```
 
+## Run teleop demo
+Use **WASD** for linear motion and **QE** for turning. **R** reloads the scene and **F** jumps to the next one. 
+```sh
+uv run dataflow  --teleop
+```
+
 
 ## Testing with Artefacts
 

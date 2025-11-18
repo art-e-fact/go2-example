@@ -1,4 +1,4 @@
-"""TODO: Add docstring."""
+"""Simple navigator node that steers towards waypoints."""
 
 import pyarrow as pa
 import numpy as np
@@ -8,7 +8,7 @@ import msgs
 
 
 def main():
-    """TODO: Add docstring."""
+    """Publish Twist2D commands to navigate to waypoints."""
     node = Node()
 
     print("Navigator node started.")
