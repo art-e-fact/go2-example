@@ -20,7 +20,8 @@ jobs:
         run: uv python install
 
       - name: Install the project
-        run: uv sync --locked --all-extras --dev
+        # The base GitHub VM doesn't have enough space for all dependencies
+        run: uv pip install ruff
 
       - name: Run ruff check
         run: uv run ruff check .
