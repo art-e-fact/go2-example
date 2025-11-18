@@ -37,11 +37,6 @@ uv run dataflow --test-all
 ```
 See `uv run dataflow --help` for all options
 
-## Development
-```sh
-# Setup isaacsim typehints in VS Code
-uv run -m isaacsim --generate-vscode-settings
-```
 
 ## Project walkthrough
 
@@ -84,3 +79,18 @@ Steps:
  - This will generate `logs/<checkpoint>/exported/policy.pt` and `logs/<checkpoint>/params/env.yaml`. 
  - Override these files in the `./nodes/policy_controller/policy` of this repo.
  - Try the new policy with `uv run python -m simulation`
+
+
+
+## Development
+
+```sh
+# Setup isaacsim type hints in VS Code
+uv run -m isaacsim --generate-vscode-settings
+```
+
+```sh
+# Install pre-commit hooks
+uv pip install pre-commit
+uv run pre-commit install
+```
