@@ -4,15 +4,59 @@ from dora.builder import DataflowBuilder
 from typing_extensions import Annotated
 from pathlib import Path
 
+workspace_path = Path(__file__).parent.parent.parent.parent
+output_path = workspace_path / "outputs/artefacts"
+nodes_path = workspace_path / "nodes"
+temp_dataflow_path = output_path / "dataflow.yaml"
 
-def exec_dataflow(dataflow: DataflowBuilder, temp_dataflow_path: Path):
+
+def _exec_dataflow(dataflow: DataflowBuilder, temp_dataflow_path: Path):
     """Build and/or run the dataflow with dora-rs."""
     dataflow.to_yaml(temp_dataflow_path)
     dora.build(str(temp_dataflow_path), uv=True)
     dora.run(str(temp_dataflow_path))
 
 
+def _create_base_dataflow() -> DataflowBuilder:
+    dataflow = DataflowBuilder(name="go2-example-dataflow")
+
+    output_path.mkdir(parents=True, exist_ok=True)
+
+    # Set up simulation
+    simulation = dataflow.add_node(
+        id="simulation",
+        path="simulation",
+        args="--scene generated_pyramid --use-auto-pilot",
+        env={
+            "OMNI_KIT_ACCEPT_EULA": "YES",
+            "OUTPUT_DIR": str(output_path),
+        },
+    )
+    simulation.add_input("pub_status_tick", "dora/timer/millis/200")
+    simulation.add_input("joint_commands", "policy_controller/joint_commands")
+    simulation.add_output("robot_pose")
+    simulation.add_output("waypoints")
+    simulation.add_output("scene_info")
+    simulation.add_output("rtf")
+    simulation.add_output("observations")
+    simulation.add_output("simulation_time")
+
+    # Set up policy controller
+    policy_controller = dataflow.add_node(
+        id="policy_controller",
+        path="policy_controller",
+    )
+    policy_controller.add_input("observations", "simulation/observations")
+    policy_controller.add_input("clock", "simulation/simulation_time")
+    policy_controller.add_output("joint_commands")
+
+    return dataflow, simulation, policy_controller
+
+
 def run_dataflow(
+    teleop: Annotated[
+        bool, typer.Option(help="Use keyboard teleoperation to control the robot")
+    ] = False,
     test_waypoint_poses: Annotated[
         bool, typer.Option(help="Run the waypoint poses tests")
     ] = False,
@@ -22,6 +66,11 @@ def run_dataflow(
     test_all: Annotated[bool, typer.Option(help="Run all integration tests")] = False,
 ):
     """Compose the dataflow, and build/run it with dora-rs."""
+
+    # We either test or teleop for now
+    if teleop and (test_waypoint_poses or test_waypoint_report or test_all):
+        print("Cannot use teleop and testing options at the same time.")
+        return
 
     # List tests for running
     tests = []
@@ -34,42 +83,24 @@ def run_dataflow(
         print("No tests selected to run. Use --help for options.")
         # TODO: run default dataflow without tester node (and optionally with teleop)
 
+    if teleop:
+        dataflow, simulation, policy_controller = _create_base_dataflow()
+
+        teleop_node = dataflow.add_node(
+            id="teleop",
+            path="teleop",
+        )
+        teleop_node.add_input("tick", "dora/timer/millis/100")
+        teleop_node.add_output("command_2d")
+        teleop_node.add_output("load_scene")
+
+        policy_controller.add_input("command_2d", "teleop/command_2d")
+        simulation.add_input("load_scene", "teleop/load_scene")
+
+        _exec_dataflow(dataflow, temp_dataflow_path)
+
     for test in tests:
-        dataflow = DataflowBuilder(name="go2-example-dataflow")
-        workspace_path = Path(__file__).parent.parent.parent.parent
-        output_path = workspace_path / "outputs/artefacts"
-        nodes_path = workspace_path / "nodes"
-        temp_dataflow_path = output_path / "dataflow.yaml"
-
-        output_path.mkdir(parents=True, exist_ok=True)
-
-        # Set up simulation
-        simulation = dataflow.add_node(
-            id="simulation",
-            path="simulation",
-            args="--scene generated_pyramid --use-auto-pilot",
-            env={
-                "OMNI_KIT_ACCEPT_EULA": "YES",
-                "OUTPUT_DIR": str(output_path),
-            },
-        )
-        simulation.add_input("pub_status_tick", "dora/timer/millis/200")
-        simulation.add_input("joint_commands", "policy_controller/joint_commands")
-        simulation.add_output("robot_pose")
-        simulation.add_output("waypoints")
-        simulation.add_output("scene_info")
-        simulation.add_output("rtf")
-        simulation.add_output("observations")
-        simulation.add_output("simulation_time")
-
-        policy_controller = dataflow.add_node(
-            id="policy_controller",
-            path="policy_controller",
-        )
-        policy_controller.add_input("observations", "simulation/observations")
-        policy_controller.add_input("clock", "simulation/simulation_time")
-        policy_controller.add_input("command_2d", "navigator/command_2d")
-        policy_controller.add_output("joint_commands")
+        dataflow, simulation, policy_controller = _create_base_dataflow()
 
         # Add waypoint navigation
         navigator = dataflow.add_node(
@@ -80,6 +111,7 @@ def run_dataflow(
         navigator.add_input("robot_pose", "simulation/robot_pose")
         navigator.add_input("waypoints", "simulation/waypoints")
         navigator.add_output("command_2d")
+        policy_controller.add_input("command_2d", "navigator/command_2d")
 
         # Add the tester node
         tester = dataflow.add_node(
@@ -102,7 +134,7 @@ def run_dataflow(
         # Allow the tester to load scenes in the simulation
         simulation.add_input("load_scene", "tester/load_scene")
 
-        exec_dataflow(dataflow, temp_dataflow_path)
+        _exec_dataflow(dataflow, temp_dataflow_path)
 
 
 def main():

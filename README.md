@@ -19,6 +19,12 @@ git lfs pull
 uv sync
 ```
 
+## Run teleop demo
+Use **WASD** for linear motion and **QE** for turning. **R** reloads the scene and **F** jumps to the next one. 
+```sh
+uv run dataflow  --teleop
+```
+
 
 ## Testing with Artefacts
 
@@ -59,6 +65,7 @@ The `dora-rs` nodes are organized as separate Python packages under `nodes/*`
  - [`tester`](./nodes/tester/) contains the test nodes that should be executed with `pytest`
    - [test_waypoints_poses.py](./nodes/tester/tester/test_waypoints_poses.py) Executes multiple waypoint navigation scenarios and uses the robot and waypoint position data to determine if the waypoint mission was successful.
    - [test_waypoints_report.py](./nodes/tester/tester/test_waypoints_report.py) The simplified version of the test above, that uses the internal waypoint mission state from the simulation to determine if the waypoint mission was successful.
+ - [`teleop`](./nodes/teleop/) implements keyboard teleop control
 
 ### Other packages
  - [`msgs`](./msgs/) Implements the necessary messages as python classes using [`arrow-message`](https://github.com/hennzau/arrow-message) 

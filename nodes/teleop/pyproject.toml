@@ -1,0 +1,26 @@
+[project]
+name = "teleop"
+version = "0.0.0"
+authors = [{ name = "Your Name", email = "email@email.com" }]
+description = "teleop"
+license = { text = "MIT" }
+readme = "README.md"
+requires-python = ">=3.8"
+
+dependencies = [
+    "msgs",
+    "dora-rs >= 0.3.9",
+    "pynput>=1.8.1",
+]
+
+[dependency-groups]
+dev = ["pytest >=8.1.1", "ruff >=0.9.1"]
+
+[project.scripts]
+teleop = "teleop.main:main"
+
+[tool.ruff.lint]
+extend-select = [
+  "D",   # pydocstyle
+  "UP"
+]

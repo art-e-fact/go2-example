@@ -20,10 +20,14 @@ navigator = { workspace = true }
 policy_controller = { workspace = true }
 tester = { workspace = true }
 dataflow = { workspace = true }
+teleop = { workspace = true }
 
 [tool.uv.workspace]
 members = ["nodes/*", "msgs", "dataflow"]
 
 
 [dependency-groups]
-dev = ["ruff >=0.14.3"]
+dev = [
+    "ruff >=0.14.3", 
+    "pre-commit",
+]
