@@ -1,5 +1,6 @@
 from enum import Enum
 
+
 class Scene(str, Enum):
     grid = "grid"
     hospital_staircase = "hospital_staircase"

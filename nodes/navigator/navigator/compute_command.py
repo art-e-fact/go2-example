@@ -1,3 +1,9 @@
+"""Compute navigation commands for robot control.
+
+This module provides functionality to calculate control commands based on
+the robot's current pose and a goal position.
+"""
+
 import numpy as np
 from scipy.spatial.transform import Rotation
 from msgs import Transform
@@ -9,12 +15,12 @@ def compute_command(robot_pose: Transform, goal_position: np.ndarray) -> np.ndar
     It will drive straight to the goal without considering obstacles.
 
     Args:
-        robot_position: Current position of the robot [x, y, z]
-        robot_quaternion: Current orientation as quaternion [w, x, y, z]
+        robot_pose: Current robot pose
         goal_position: Target position [x, y, z]
 
     Returns:
         np.ndarray: Command vector [linear_x, linear_y, angular_z]
+
     """
     # Calculate 2D direction vector (ignoring height)
     direction = goal_position[:2] - robot_pose.position[:2]

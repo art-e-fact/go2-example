@@ -1,3 +1,9 @@
+"""Configuration parser for RL policy.
+
+This module provides the PolicyConfig class for loading and parsing
+RL policy configuration from YAML files.
+"""
+
 from pathlib import Path
 import numpy as np
 import yaml
@@ -32,19 +38,22 @@ class PolicyConfig:
         SafeLoaderIgnoreUnknown.add_constructor(
             None, SafeLoaderIgnoreUnknown.ignore_unknown
         )
-        with open(config_path, "r") as f:
+        with open(config_path) as f:
             self.config = yaml.load(f, Loader=SafeLoaderIgnoreUnknown)
 
     @property
     def dt(self) -> float:
+        """Simulation time step from the config file."""
         return self.config.get("sim").get("dt")
 
     @property
     def decimation(self) -> int:
+        """Number of physics steps per control step."""
         return self.config.get("decimation")
 
     @property
     def action_scale(self) -> float:
+        """Action scaling factor for the policy."""
         return 0.2  # TODO: Wind out where to read this from
 
     # TODO: Read these from env.yaml

@@ -17,9 +17,7 @@ def test_receives_scene_info_on_startup(node):
 
 @pytest.mark.parametrize("difficulty", [0.1, 0.7, 1.1])
 @pytest.mark.clock_timeout(30)
-def test_completes_waypoint_mission_with_variable_height_steps(
-    node, difficulty: float
-):
+def test_completes_waypoint_mission_with_variable_height_steps(node, difficulty: float):
     """Test that the waypoint mission completes successfully.
 
     The pyramid steps height is configured via difficulty.
@@ -35,6 +33,7 @@ def test_completes_waypoint_mission_in_photo_realistic_env(node, scene: str):
 
 
 def run_waypoint_mission_test(node, scene: str, difficulty: float):
+    """Run a waypoint mission test with the given scene and difficulty."""
     print(
         f"Starting waypoint mission test in scene '{scene}' with difficulty {difficulty}"
     )

@@ -1,7 +1,5 @@
 from pathlib import Path
-from typing import Optional
 from isaacsim.sensors.camera import Camera
-from isaacsim.core.prims import SingleXFormPrim
 from simulation.waypoint_mission import WaypointMission, WaypointStatus
 import numpy as np
 import isaacsim.core.utils.numpy.rotations as rot_utils
@@ -130,7 +128,6 @@ class CameraManager:
 
     def capture_topdown_snapshot(self):
         """Waits untils the topdown camera is ready and captures a single snapshot."""
-
         # If countdown is zero, we have already taken the snapshot
         if self.topdown_image_countdown <= 0:
             return

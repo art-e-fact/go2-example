@@ -2,7 +2,6 @@
 
 from pathlib import Path
 
-import pyarrow as pa
 from dora import Node
 
 import msgs

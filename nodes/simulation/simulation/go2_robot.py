@@ -1,5 +1,4 @@
 from pathlib import Path
-from typing import Optional
 
 import msgs
 import numpy as np
@@ -15,11 +14,11 @@ class Go2Policy(PolicyController):
     def __init__(
         self,
         prim_path: str,
-        root_path: Optional[str] = None,
+        root_path: str | None = None,
         name: str = "go2",
-        usd_path: Optional[str] = None,
-        position: Optional[np.ndarray] = None,
-        orientation: Optional[np.ndarray] = None,
+        usd_path: str | None = None,
+        position: np.ndarray | None = None,
+        orientation: np.ndarray | None = None,
         debug_vis: bool = False,
     ) -> None:
         """Initialize robot and load RL policy.
@@ -35,7 +34,7 @@ class Go2Policy(PolicyController):
             orientation (np.ndarray) -- orientation of the robot
 
         """
-        if usd_path == None:
+        if usd_path is None:
             usd_path = "http://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/5.0/Isaac/IsaacLab/Robots/Unitree/Go2/go2.usd"
 
         super().__init__(name, prim_path, root_path, usd_path, position, orientation)

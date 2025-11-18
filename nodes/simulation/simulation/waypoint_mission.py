@@ -1,7 +1,5 @@
 import re
 import time
-from enum import Enum
-from typing import List, Tuple, Union
 
 import numpy as np
 import omni
@@ -12,15 +10,15 @@ from pxr import Gf, Sdf, Usd, UsdGeom, UsdLux
 from msgs import WaypointStatus
 
 
-def find_prims_by_name_pattern(pattern: str) -> List[Usd.Prim]:
-    """
-    Finds all prims on the stage whose names match the given regex pattern.
+def find_prims_by_name_pattern(pattern: str) -> list[Usd.Prim]:
+    """Find all prims on the stage whose names match the given regex pattern.
 
     Args:
         pattern: A regular expression to match against prim names.
 
     Returns:
         A list of Usd.Prim objects that match the pattern.
+
     """
     stage = omni.usd.get_context().get_stage()
     if not stage:
@@ -39,7 +37,7 @@ def find_prims_by_name_pattern(pattern: str) -> List[Usd.Prim]:
 
 
 class Waypoint:
-    def __init__(self, prim_path: Union[str, Sdf.Path]):
+    def __init__(self, prim_path: str | Sdf.Path):
         stage = omni.usd.get_context().get_stage()
         self.prim = stage.GetPrimAtPath(prim_path)
 
@@ -70,7 +68,7 @@ class Waypoint:
         self.waving_speed = 0.03
         self.target_height = 0.35
 
-    def get_position(self) -> Tuple[np.ndarray, np.ndarray]:
+    def get_position(self) -> tuple[np.ndarray, np.ndarray]:
         # Waypoints don't move, so memoize the position on first call
         if not hasattr(self, "_position"):
             xform = SingleXFormPrim(str(self.prim.GetPath()))
@@ -228,12 +226,12 @@ def create_disk_light(
     return light_prim
 
 
-def deactivate_all_children(prim_path: Union[str, Sdf.Path]):
-    """
-    Removes all direct children of a prim at the given path.
+def deactivate_all_children(prim_path: str | Sdf.Path):
+    """Removes all direct children of a prim at the given path.
 
     Args:
         prim_path: The path of the parent prim.
+
     """
     stage = omni.usd.get_context().get_stage()
     if not stage:

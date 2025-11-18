@@ -37,7 +37,9 @@ class HeightScanGrid:
         if self._debug_vis:
             self._draw_height_data()
 
-        self._raw_height_data.fill(1.0 + self.source_offset)  # Reset height data with 1.0
+        self._raw_height_data.fill(
+            1.0 + self.source_offset
+        )  # Reset height data with 1.0
         for iy in range(self._y_steps):
             for ix in range(self._x_steps):
                 offset_x = -(self.size[0] / 2) + (ix * self._x_step_size)
@@ -46,7 +48,9 @@ class HeightScanGrid:
                 offset_x_rotated = offset_x * np.cos(yaw) - offset_y * np.sin(yaw)
                 offset_y_rotated = offset_x * np.sin(yaw) + offset_y * np.cos(yaw)
                 # Calculate the source position
-                source = position + np.array([offset_x_rotated, offset_y_rotated, self.source_offset])
+                source = position + np.array(
+                    [offset_x_rotated, offset_y_rotated, self.source_offset]
+                )
                 if self._debug_vis:
                     self._debug_sources[ix, iy] = source
 
@@ -54,14 +58,18 @@ class HeightScanGrid:
                     return self._report_all_hits(hit, ix, iy)
 
                 for _ in range(self.sample_count):
-                    offset_x = np.random.uniform(-self._x_step_size / 2, self._x_step_size / 2)
-                    offset_y = np.random.uniform(-self._y_step_size / 2, self._y_step_size / 2)
+                    offset_x = np.random.uniform(
+                        -self._x_step_size / 2, self._x_step_size / 2
+                    )
+                    offset_y = np.random.uniform(
+                        -self._y_step_size / 2, self._y_step_size / 2
+                    )
                     omni.physx.get_physx_scene_query_interface().raycast_all(
                         source + np.array([offset_x, offset_y, 0.0]),
                         (0.0, 0.0, -1.0),
                         100.0,
                         callback,
-                )
+                    )
 
     def _draw_height_data(self):
         draw = _debug_draw.acquire_debug_draw_interface()

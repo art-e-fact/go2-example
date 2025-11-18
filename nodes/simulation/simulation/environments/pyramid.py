@@ -1,7 +1,6 @@
 from isaacsim.core.utils.semantics import add_update_semantics
 from pxr import Gf, UsdGeom, PhysxSchema, UsdPhysics
 import omni.usd
-from isaacsim.core.utils.prims import define_prim
 
 
 def create_stepped_pyramid(
@@ -12,8 +11,7 @@ def create_stepped_pyramid(
     position=(0.0, 0.0, 0.0),
     add_physics=True,
 ):
-    """
-    Creates a stepped pyramid using scaled cubes, often used in RL for quadrupeds.
+    """Creates a stepped pyramid using scaled cubes, often used in RL for quadrupeds.
 
     The pyramid is built from the bottom up. Each level is a single scaled cube.
 
@@ -24,6 +22,7 @@ def create_stepped_pyramid(
         step_width (float): The width and depth of the smallest step (at the top).
         position (tuple): The (x, y, z) base position of the pyramid.
         add_physics (bool): Whether to add physics properties to the steps.
+
     """
     stage = omni.usd.get_context().get_stage()
     pyramid_root = UsdGeom.Xform.Define(stage, prim_path)
