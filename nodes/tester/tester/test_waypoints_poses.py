@@ -36,6 +36,7 @@ def test_completes_waypoint_mission_in_photo_realistic_env(node, scene: str):
 
 
 def run_waypoint_mission_test(node, scene: str, difficulty: float):
+    """Run the waypoint mission test."""
     transforms = Transforms()
     node.send_output(
         "load_scene", msgs.SceneInfo(name=scene, difficulty=difficulty).to_arrow()
