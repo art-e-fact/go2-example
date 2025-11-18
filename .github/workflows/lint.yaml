@@ -7,18 +7,20 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
-          lfs: true
+          lfs: false
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v3
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
 
       - name: Set up Python
-        run: uv python install 3.11
+        run: uv python install
 
-      - name: Install dependencies
-        run: uv sync --all-groups
+      - name: Install the project
+        run: uv sync --locked --all-extras --dev
 
       - name: Run ruff check
         run: uv run ruff check .
