@@ -19,6 +19,9 @@ jobs:
       - name: Set up Python
         run: uv python install
 
+      - name: Create virtual environment
+        run: uv venv
+
       - name: Install the project
         # The base GitHub VM doesn't have enough space for all dependencies
         run: uv pip install ruff
