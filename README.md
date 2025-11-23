@@ -2,6 +2,8 @@
 
 This project demos testing waypoint mission execution by a Unitree Go2 quadruped in different simulated environments.   
 
+<img width="3716" height="2100" alt="go2-example-scenes" src="https://github.com/user-attachments/assets/212c96c9-bbe3-42e5-9a3a-7e28ee00b5f0" />
+
 ## Prerequisites
 - Isaac Sim 5.0 compatible [hardware](https://docs.isaacsim.omniverse.nvidia.com/latest/installation/requirements.html) and [driver](https://docs.omniverse.nvidia.com/dev-guide/latest/common/technical-requirements.html)
 - [`uv` package manager](https://docs.astral.sh/uv/getting-started/installation/) (Not mandatory, but the instructions below are using `uv`)
@@ -42,6 +44,7 @@ This will execute all the tests without parameterization in `artefacts.yaml`
 uv run dataflow --test-all
 ```
 See `uv run dataflow --help` for all options
+
 
 
 ## Project walkthrough
