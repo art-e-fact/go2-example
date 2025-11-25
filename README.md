@@ -27,16 +27,6 @@ Use **WASD** for linear motion and **QE** for turning. **R** reloads the scene a
 uv run dataflow  --teleop
 ```
 
-
-## Testing with Artefacts
-
-Follow the instructions at [docs.artefacts.com](https://docs.artefacts.com/getting-started/) to set-up the project. 
-
-```sh
-# Launch Isaac Sim and execute multiple waypoint tests
-uvx --from artefacts-cli artefacts run waypoint_missions
-```
-
 ## Run tests with dora-rs
 This will execute all the tests without parameterization in `artefacts.yaml`
 ```sh
@@ -44,6 +34,32 @@ This will execute all the tests without parameterization in `artefacts.yaml`
 uv run dataflow --test-all
 ```
 See `uv run dataflow --help` for all options
+
+## Testing with Artefacts
+
+### Set up the Artefacts dashboard
+Here are the quick step, for setting up yout Artefacts project. For more detail, see the instructions at [docs.artefacts.com](https://docs.artefacts.com/getting-started/). 
+
+1. Install the CLI with `pipx` (other installing methods would work too)
+```sh
+sudo apt install pipx
+pipx ensurepath
+pipx install artefacts-cli
+```
+
+2. Create an account, and log in to https://app.artefacts.com.
+3. Create a new project with your chosen project name and follow the instruction on the new project page for authenticating.
+4. Change the project name in the [artefacts.yaml](./artefacts.yaml)
+
+### Run the tests with Artefacts
+
+```sh
+# Launch Isaac Sim and execute multiple waypoint tests
+uvx --from artefacts-cli artefacts run waypoint_missions
+```
+You can track the status of the job on your project page. The test outputs of each scenario will be available on the project page after they finish. artefacts hello artefacts/new-project-23
+
+
 
 
 
