@@ -23,7 +23,12 @@ dataflow = { workspace = true }
 teleop = { workspace = true }
 
 [tool.uv.workspace]
-members = ["nodes/*", "msgs", "dataflow"]
+members = [
+    "nodes/*",
+    "msgs",
+    "dataflow",
+    "isaac-rerun-logger",
+]
 
 
 [dependency-groups]

@@ -11,6 +11,7 @@ from isaacsim.core.utils import stage as stage_utils
 from omni.isaac.core.utils.prims import get_prim_at_path
 from isaacsim.core.prims import SingleXFormPrim
 from pxr import Gf, Sdf, UsdGeom
+from isaac_rerun_logger import UsdRerunLogger
 
 from simulation.camera_manager import CameraManager
 
@@ -184,6 +185,8 @@ class EnvironmentRunner:
         )
         self.world.reset()
 
+        self.rerun_logger = UsdRerunLogger(self.world.stage)
+
         self.go2 = Go2Policy(
             prim_path=self.robot_path,
             name="Go2",
@@ -327,6 +330,7 @@ class EnvironmentRunner:
             return
 
         self.world.step(render=True)
+        self.rerun_logger.log_stage(frame_idx=self.world.current_time_step_index)
 
         self.follow_camera.update()
         self.waypoint_mission.update()

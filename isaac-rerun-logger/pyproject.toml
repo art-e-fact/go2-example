@@ -1,0 +1,16 @@
+[project]
+name = "isaac-rerun-logger"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "Andras Polgar", email = "azazdeaz@gmail.com" }
+]
+requires-python = ">=3.11"
+dependencies = [
+    "rerun-sdk>=0.23.1",
+]
+
+[build-system]
+requires = ["uv_build>=0.9.7,<0.10.0"]
+build-backend = "uv_build"
