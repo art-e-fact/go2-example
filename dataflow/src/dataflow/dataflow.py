@@ -32,7 +32,6 @@ def _create_base_dataflow() -> DataflowBuilder:
         args="--scene generated_pyramid --use-auto-pilot",
         env={
             "OMNI_KIT_ACCEPT_EULA": "YES",
-            "OUTPUT_DIR": str(output_path),
         },
     )
     simulation.add_input("pub_status_tick", "dora/timer/millis/200")
