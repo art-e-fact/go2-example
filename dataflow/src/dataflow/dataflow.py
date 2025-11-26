@@ -1,3 +1,4 @@
+import os
 import typer
 import dora
 from dora.builder import DataflowBuilder
@@ -5,8 +6,10 @@ from typing_extensions import Annotated
 from pathlib import Path
 
 workspace_path = Path(__file__).parent.parent.parent.parent
-output_path = workspace_path / "outputs/artefacts"
 nodes_path = workspace_path / "nodes"
+output_path = Path(
+    os.getenv("ARTEFACTS_SCENARIO_UPLOAD_DIR", workspace_path / "outputs/artefacts")
+)
 temp_dataflow_path = output_path / "dataflow.yaml"
 
 
