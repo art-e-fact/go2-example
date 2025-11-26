@@ -824,11 +824,25 @@ name = "isaac-rerun-logger"
 version = "0.1.0"
 source = { editable = "isaac-rerun-logger" }
 dependencies = [
+    { name = "pillow" },
     { name = "rerun-sdk" },
+    { name = "usd-core" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "types-usd" },
 ]
 
 [package.metadata]
-requires-dist = [{ name = "rerun-sdk", specifier = ">=0.23.1" }]
+requires-dist = [
+    { name = "pillow", specifier = ">=11.2.1" },
+    { name = "rerun-sdk", specifier = ">=0.23.1" },
+    { name = "usd-core", specifier = ">=25.11" },
+]
+
+[package.metadata.requires-dev]
+dev = [{ name = "types-usd", specifier = ">=24.5.2" }]
 
 [[package]]
 name = "isaacsim"
@@ -2816,6 +2830,15 @@ wheels = [
 ]
 
 [[package]]
+name = "types-usd"
+version = "24.5.2"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/1e/2e/b27175e276886dece2660c527556981dbf9465b977826e8b602500113fed/types_usd-24.5.2.tar.gz", hash = "sha256:5da654fdc17dfb8ddf2b264c626e5236e6572b5359498c5ec634b5577abe86fa", size = 487745, upload-time = "2024-08-21T03:40:44.95Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/a9/38/77e716ff072350c3ae98da836e26080ffaf72e5da41c301dad55d23d8897/types_usd-24.5.2-py2.py3-none-any.whl", hash = "sha256:e696c40f7aec7fa3f65f14d26345b9b747d9004616bcd9fb01c85d4bb52b3d68", size = 541467, upload-time = "2024-08-21T03:40:43.139Z" },
+]
+
+[[package]]
 name = "typing-extensions"
 version = "4.12.2"
 source = { registry = "https://pypi.org/simple" }
@@ -2848,6 +2871,16 @@ wheels = [
 [package.optional-dependencies]
 socks = [
     { name = "pysocks" },
+]
+
+[[package]]
+name = "usd-core"
+version = "25.11"
+source = { registry = "https://pypi.org/simple" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/da/9a/2a27b2ff16f8def2ef384a7deebb0e670c1016ea9e5ce7b0ebb14bb9ea93/usd_core-25.11-cp311-none-macosx_10_9_universal2.whl", hash = "sha256:3485b21e8319a74b860df96122fbf7c43a2018b76dd975d3855a5f88a5cdba67", size = 38455875, upload-time = "2025-10-24T19:01:15.247Z" },
+    { url = "https://files.pythonhosted.org/packages/78/6a/fe4feefe867e92e3c657c38bc0041a2b39e035f7fdf37b4d9394c959871e/usd_core-25.11-cp311-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:a971c76ee4470a318df0517109fa8302f4bfa4f42c1f26b011658bb2ae6b6fa4", size = 27516181, upload-time = "2025-10-24T19:01:18.508Z" },
+    { url = "https://files.pythonhosted.org/packages/ef/12/50ab94ef969c4f9cfd08a9086ebd544e9fa3caadd57587e8851e612f2805/usd_core-25.11-cp311-none-win_amd64.whl", hash = "sha256:dff4cf30a36659ce8ddf35b8d013ee02516487174aafa806938c34a782cde89c", size = 13027051, upload-time = "2025-10-24T19:01:21.832Z" },
 ]
 
 [[package]]

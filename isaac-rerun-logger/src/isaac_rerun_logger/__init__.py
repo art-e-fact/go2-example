@@ -1,6 +1,8 @@
-from pxr import Usd, UsdGeom, Gf
+from pxr import Usd, UsdGeom, Gf, UsdShade
 import rerun as rr
 import numpy as np
+from PIL import Image
+import os
 
 
 class UsdRerunLogger:
@@ -144,6 +146,9 @@ class UsdRerunLogger:
 
         # Convert to numpy array and reshape for Rerun
         indices_array = np.array(indices, dtype=np.uint32).reshape(-1, 3)
+        print(
+            f"Mesh {entity_path} has {len(vertices)} vertices and {len(indices_array)} triangles"
+        )
 
         # Get normals if available
         normals_attr = mesh.GetNormalsAttr()
@@ -155,26 +160,183 @@ class UsdRerunLogger:
                     [(n[0], n[1], n[2]) for n in normals_data], dtype=np.float32
                 )
 
+        # --- Material and Texture Handling ---
+        texcoords = None
+        texture_buffer = None
+        # texture_format = None
+        albedo_factor = None
+
+        # Get UVs
+        uvs = self._get_uvs(mesh)
+        if uvs is not None:
+            texcoords = uvs
+
+        # Get Material Info
+        color, texture_path = self._get_material_info(prim)
+        print(
+            f"Material info for {entity_path}: color={color}, texture_path={texture_path}"
+        )
+        if color:
+            albedo_factor = color
+        if texture_path:
+            data, format = self._load_texture(texture_path)
+            if data is not None:
+                texture_buffer = data
+                # texture_format = format
+
         print(
             f"Logging mesh {entity_path} with {len(vertices)} vertices and {len(indices_array)} triangles"
         )
 
         # Log the mesh to Rerun
+        mesh_args = {
+            "vertex_positions": vertices,
+            "triangle_indices": indices_array,
+        }
         if normals is not None and len(normals) == len(vertices):
-            rr.log(
-                entity_path,
-                rr.Mesh3D(
-                    vertex_positions=vertices,
-                    triangle_indices=indices_array,
-                    vertex_normals=normals,
-                ),
-            )
-        else:
-            rr.log(
-                entity_path,
-                rr.Mesh3D(vertex_positions=vertices, triangle_indices=indices_array),
-            )
+            mesh_args["vertex_normals"] = normals
+        if texcoords is not None and len(texcoords) == len(vertices):
+            mesh_args["vertex_texcoords"] = texcoords
+
+        if texture_buffer is not None:
+            mesh_args["albedo_texture"] = texture_buffer
+
+        if albedo_factor is not None:
+            mesh_args["albedo_factor"] = albedo_factor
+
+        rr.log(entity_path, rr.Mesh3D(**mesh_args))
 
     def clear_logged_meshes(self):
         """Clear the cache of logged meshes, allowing them to be logged again."""
         self._logged_meshes.clear()
+
+    def _get_uvs(self, mesh: UsdGeom.Mesh):
+        """Get UV coordinates from the mesh."""
+        primvars_api = UsdGeom.PrimvarsAPI(mesh.GetPrim())
+        for name in ["st", "uv", "texcoord", "texture_coordinates"]:
+            primvar = primvars_api.GetPrimvar(name)
+            if primvar and primvar.IsDefined():
+                uvs = primvar.Get()
+                if uvs:
+                    print(f"Found UVs with primvar '{name}'")
+                    print(f"Sample UVs: {uvs[:5]}")
+                    print(f"UVs length: {len(uvs)}")
+                    indices = primvar.GetIndices()
+                    if indices:
+                        uvs = [uvs[i] for i in indices]
+                    return np.array([(u[0], u[1]) for u in uvs], dtype=np.float32)
+        return None
+
+    def _get_material_info(self, prim: Usd.Prim):
+        """
+        Get material color or texture path.
+        Returns: (color_tuple, texture_path)
+        """
+        binding_api = UsdShade.MaterialBindingAPI(prim)
+        material: UsdShade.Material = binding_api.ComputeBoundMaterial()[0]
+        if not material:
+            return None, None
+
+        shader = material.ComputeSurfaceSource()[0]
+        if not shader:
+            return None, None
+
+        # List of inputs to check for color/texture
+        input_names = [
+            "diffuseColor",
+            "albedo",
+            "color",
+            "base_color",
+            "diffuse_texture",
+            "albedo_texture",
+            "base_color_texture",
+        ]
+
+        for name in input_names:
+            input_attr = shader.GetInput(name)
+            if not input_attr:
+                continue
+
+            # 1. Check for connections (Texture)
+            if input_attr.HasConnectedSource():
+                source, source_name, _ = input_attr.GetConnectedSource()
+                if source:
+                    source_prim = source.GetPrim()
+
+                    # Case A: Connected to UsdUVTexture (common in UsdPreviewSurface)
+                    if source_prim.GetTypeName() == "UsdUVTexture":
+                        file_input = source.GetInput("file")
+                        if file_input:
+                            file_path = file_input.Get()
+                            if file_path:
+                                path = (
+                                    file_path.path
+                                    if hasattr(file_path, "path")
+                                    else str(file_path)
+                                )
+                                return None, path
+
+                    # Case B: Connected to Material input (common in OmniPBR / MDL)
+                    elif source_prim.IsA(UsdShade.Material):
+                        material_input = source.GetInput(source_name)
+                        if material_input:
+                            val = material_input.Get()
+                            if val:
+                                path = val.path if hasattr(val, "path") else str(val)
+                                if path:
+                                    return None, path
+
+            # 2. Check for direct value (Color)
+            value = input_attr.Get()
+            if value:
+                if isinstance(value, Gf.Vec3f):
+                    return (
+                        int(value[0] * 255),
+                        int(value[1] * 255),
+                        int(value[2] * 255),
+                        255,
+                    ), None
+
+        return None, None
+
+    def _load_texture(self, texture_path):
+        """Load texture from path."""
+        try:
+            # Resolve path relative to stage
+            if not os.path.isabs(texture_path):
+                stage_path = self.stage.GetRootLayer().realPath
+                if stage_path:
+                    texture_path = os.path.join(
+                        os.path.dirname(stage_path), texture_path
+                    )
+
+            if not os.path.exists(texture_path):
+                return None, None
+
+            image = Image.open(texture_path)
+            image = image.convert("RGBA")
+            width, height = image.size
+            data = np.array(image)
+
+            return data, rr.datatypes.ImageFormat(
+                width=width, height=height, color_model="RGBA", channel_datatype="U8"
+            )
+        except Exception as e:
+            print(f"Failed to load texture {texture_path}: {e}")
+            return None, None
+
+
+if __name__ == "__main__":
+    test_usds = [
+        # "/home/azazdeaz/repos/art/go2-example/assets/rail_blocks/rail_blocks.usd",
+        # "/home/azazdeaz/repos/art/go2-example/assets/excavator_scan/excavator.usd",
+        # "/home/azazdeaz/repos/art/go2-example/isaac-rerun-logger/assets/block.usd",
+        # "/home/azazdeaz/repos/art/go2-example/isaac-rerun-logger/assets/dex_cube_instanceable.usd",
+        # "/home/azazdeaz/repos/art/go2-example/isaac-rerun-logger/assets/colored_cube.usda",
+        "/home/azazdeaz/repos/art/go2-example/isaac-rerun-logger/assets/Collected_block_letter/block_letter.usda",
+    ]
+    for usd_path in test_usds:
+        print(f"\n\n\n>> Logging USD stage: {usd_path}")
+        stage = Usd.Stage.Open(usd_path)
+        logger = UsdRerunLogger(stage)
+        logger.log_stage(frame_idx=0)
