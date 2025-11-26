@@ -1,12 +1,12 @@
 # Isaac Sim - Unitree Go2 example
 
-This project demos testing waypoint mission execution by a Unitree Go2 quadruped in different simulated environments.   
+This project demonstrates testing waypoint mission execution with a Unitree Go2 quadruped in different simulated environments.   
 
 <img width="3716" height="2100" alt="go2-example-scenes" src="https://github.com/user-attachments/assets/212c96c9-bbe3-42e5-9a3a-7e28ee00b5f0" />
 
 ## Prerequisites
-- Isaac Sim 5.0 compatible [hardware](https://docs.isaacsim.omniverse.nvidia.com/latest/installation/requirements.html) and [driver](https://docs.omniverse.nvidia.com/dev-guide/latest/common/technical-requirements.html)
-- [`uv` package manager](https://docs.astral.sh/uv/getting-started/installation/) (Not mandatory, but the instructions below are using `uv`)
+- Isaac Sim 5.0 compatible [hardware](https://docs.isaacsim.omniverse.nvidia.com/latest/installation/requirements.html) and [drivers](https://docs.omniverse.nvidia.com/dev-guide/latest/common/technical-requirements.html)
+- [`uv` package manager](https://docs.astral.sh/uv/getting-started/installation/) (Not mandatory, but the instructions below use `uv`)
 - [Git LFS](https://docs.github.com/en/repositories/working-with-files/managing-large-files/installing-git-large-file-storage) 
 
 ## Setup
@@ -17,18 +17,18 @@ git lfs pull
 ```
 
 ```sh
-# create the virtual environment and install dependencies
+# Create the virtual environment and install dependencies
 uv sync
 ```
 
-## Run teleop demo
-Use **WASD** for linear motion and **QE** for turning. **R** reloads the scene and **F** jumps to the next one. 
+## Run Teleop Demo
+Use **WASD** for linear motion and **QE** for turning. Press **R** to reload the scene and **F** to jump to the next one. 
 ```sh
 uv run dataflow  --teleop
 ```
 
-## Run tests with dora-rs
-This will execute all the tests without parameterization in `artefacts.yaml`
+## Run Tests with dora-rs
+This executes all the i tests locally.
 ```sh
 # Run test with dora-rs and pytest
 uv run dataflow --test-all
@@ -37,81 +37,80 @@ See `uv run dataflow --help` for all options
 
 ## Testing with Artefacts
 
-### Set up the Artefacts dashboard
-Here are the quick step, for setting up yout Artefacts project. For more detail, see the instructions at [docs.artefacts.com](https://docs.artefacts.com/getting-started/). 
+### Set up the Artefacts Dashboard
+Follow these steps to set up your Artefacts project. For more details, refer to the [documentation](https://docs.artefacts.com/getting-started/). 
 
-1. Install the CLI with `pipx` (other installing methods would work too)
+1. Install the CLI using `pipx` (other installation methods are available).
 ```sh
 sudo apt install pipx
 pipx ensurepath
 pipx install artefacts-cli
 ```
 
-2. Create an account, and log in to https://app.artefacts.com.
-3. Create a new project with your chosen project name and follow the instruction on the new project page for authenticating.
-4. Change the project name in the [artefacts.yaml](./artefacts.yaml)
+2. Create an account at https://app.artefacts.com and log in.
+3. Create a new project and follow the authentication instructions provided on the project page.
+4. Update [artefacts.yaml](./artefacts.yaml) with your project name.
 
-### Run the tests with Artefacts
+### Run Tests with Artefacts
 
 ```sh
 # Launch Isaac Sim and execute multiple waypoint tests
-uvx --from artefacts-cli artefacts run waypoint_missions
+artefacts run waypoint_missions
 ```
-You can track the status of the job on your project page. The test outputs of each scenario will be available on the project page after they finish. artefacts hello artefacts/new-project-23
+Track the job status on your project page. Test outputs for each scenario will appear there upon completion.
 
 
 
 
+## Project Walkthrough
 
-## Project walkthrough
-
-### Main tools:
+### Main Tools
  - Isaac Sim for simulation
  - `dora-rs` as the robotics framework
- - PyTorch executing the control policy
+ - PyTorch for executing the control policy
 
-This repo is organized as a Python workspace with multiple Python packages.
+This repository is organized as a Python workspace containing multiple packages.
 
 ### Nodes
-The `dora-rs` nodes are organized as separate Python packages under `nodes/*`
+`dora-rs` nodes are organized as separate Python packages located in `nodes/*`.
 
- - [`simulation`](./nodes/simulation/) runs the Isaac Sim simulation
-   - It outputs observations and information about the simulation like `robot_pose`, `simulation_time`, `waypoints`.
-   - It listens to the low-level joint commands and applies them on the simulated robot.
-   - Also accepts `load_scene` input that allows the test nodes to load different scenes without restarting the simulation.
- - [`navigator`](./nodes/navigator/) using the robot position and the waypoint positions, it computes and publishes the high-level 2D navigation commands.
- - [`policy_controller`](./nodes/policy_controller/) takes the high-level 2D navigation commands from the `navigator` nodes and outputs the low-level joint commands to the `simulation` node
- - [`tester`](./nodes/tester/) contains the test nodes that should be executed with `pytest`
-   - [test_waypoints_poses.py](./nodes/tester/tester/test_waypoints_poses.py) Executes multiple waypoint navigation scenarios and uses the robot and waypoint position data to determine if the waypoint mission was successful.
-   - [test_waypoints_report.py](./nodes/tester/tester/test_waypoints_report.py) The simplified version of the test above, that uses the internal waypoint mission state from the simulation to determine if the waypoint mission was successful.
- - [`teleop`](./nodes/teleop/) implements keyboard teleop control
+ - [`simulation`](./nodes/simulation/) runs the Isaac Sim simulation.
+   - Outputs observations and simulation data, such as `robot_pose`, `simulation_time`, and `waypoints`.
+   - Listens for low-level joint commands and applies them to the simulated robot.
+   - Accepts a `load_scene` input, allowing test nodes to switch scenes without restarting the simulation.
+ - [`navigator`](./nodes/navigator/) computes and publishes high-level 2D navigation commands based on the robot's position and waypoints.
+ - [`policy_controller`](./nodes/policy_controller/) receives high-level 2D navigation commands from the `navigator` node and outputs low-level joint commands to the `simulation` node.
+ - [`tester`](./nodes/tester/) contains test nodes executed via `pytest`.
+   - [test_waypoints_poses.py](./nodes/tester/tester/test_waypoints_poses.py) Executes multiple waypoint navigation scenarios, using robot and waypoint position data to verify mission success.
+   - [test_waypoints_report.py](./nodes/tester/tester/test_waypoints_report.py) A simplified version of the above test that uses the simulation's internal waypoint mission state to verify success.
+ - [`teleop`](./nodes/teleop/) implements keyboard teleoperation control.
 
-### Other packages
- - [`msgs`](./msgs/) Implements the necessary messages as python classes using [`arrow-message`](https://github.com/hennzau/arrow-message) 
- - [`dataflow`](./dataflow/) Using the [`dora-rs dataflow builder`](https://github.com/dora-rs/dora/tree/main/examples/python-dataflow-builder) implements a CLI to configure and run `dora-rs` dataflows. Run `uv run dataflow --help` to see all options.
+### Other Packages
+ - [`msgs`](./msgs/) implements necessary messages as Python classes using [`arrow-message`](https://github.com/hennzau/arrow-message).
+ - [`dataflow`](./dataflow/) implements a CLI to configure and run `dora-rs` dataflows using the [`dora-rs dataflow builder`](https://github.com/dora-rs/dora/tree/main/examples/python-dataflow-builder). Run `uv run dataflow --help` for options.
 
-### Future nodes
- - `teleop` for controlling the robot with keyboard or gamepad
- - `dds-transport` for interfacing the real Unitree Go2 hardware
+### Future Nodes
+ - `teleop`: Control the robot via keyboard or gamepad.
+ - `dds-transport`: Interface with real Unitree Go2 hardware.
 
 
 ## Training
 
-Policy training is separated in a standard Isaac Lab project: https://github.com/art-e-fact/go2_isaac_lab_env.
+Policy training is handled in a separate Isaac Lab project: [go2_isaac_lab_env](https://github.com/art-e-fact/go2_isaac_lab_env).
 
 Steps:
- - Follow the instructions in [go2_isaac_lab_env](https://github.com/art-e-fact/go2_isaac_lab_env) train the new policy
- - Use `scripts/rsl_rl/play.py` to export the trained policy.
- - This will generate `logs/<checkpoint>/exported/policy.pt` and `logs/<checkpoint>/params/env.yaml`. 
- - Override these files in the `./nodes/policy_controller/policy` of this repo.
- - Try the new policy with `uv run python -m simulation`
+ - Follow the instructions in the [go2_isaac_lab_env](https://github.com/art-e-fact/go2_isaac_lab_env) repository to train a new policy.
+ - Use `scripts/rsl_rl/play.py` to export the policy.
+ - This generates `logs/<checkpoint>/exported/policy.pt` and `logs/<checkpoint>/params/env.yaml`. 
+ - Overwrite the files in `./nodes/policy_controller/policy` in this repository with the newly generated files.
+ - Test the new policy with `uv run python -m simulation`.
 
 
 
 ## Development
 
 ```sh
-# Setup isaacsim type hints in VS Code
+# Set up Isaac Sim type hints in VS Code
 uv run -m isaacsim --generate-vscode-settings
 ```
 
