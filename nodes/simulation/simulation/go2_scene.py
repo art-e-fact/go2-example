@@ -25,7 +25,7 @@ from simulation.steady_rate import SteadyRate
 from simulation.waypoint_mission import WaypointMission
 
 SCENE_ROOT = "/Scene"
-OUTPUT_DIR = Path(os.getenv("OUTPUT_DIR", "outputs/artefacts"))
+OUTPUT_DIR = Path(os.getenv("ARTEFACTS_SCENARIO_UPLOAD_DIR", "outputs/artefacts"))
 
 
 def add_reference(
