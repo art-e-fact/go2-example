@@ -28,7 +28,7 @@ uv run dataflow  --teleop
 ```
 
 ## Run Tests with dora-rs
-This executes all the i tests locally.
+This executes all the tests locally.
 ```sh
 # Run test with dora-rs and pytest
 uv run dataflow --test-all
