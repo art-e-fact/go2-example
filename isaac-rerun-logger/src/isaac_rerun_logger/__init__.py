@@ -1,4 +1,4 @@
-from pxr import Usd, UsdGeom, Gf, UsdShade
+from pxr import Usd, UsdGeom, Gf, UsdShade, Sdf
 import rerun as rr
 import numpy as np
 from PIL import Image
@@ -104,12 +104,12 @@ class UsdRerunLogger:
 
         # Convert face data to triangle indices
         # USD supports arbitrary polygons, but Rerun prefers triangles
-        indices = []
+        triangles = []
         idx = 0
         for count in face_vertex_counts:
             if count == 3:
                 # Already a triangle
-                indices.extend(
+                triangles.extend(
                     [
                         face_vertex_indices[idx],
                         face_vertex_indices[idx + 1],
@@ -118,14 +118,14 @@ class UsdRerunLogger:
                 )
             elif count == 4:
                 # Quad - split into two triangles
-                indices.extend(
+                triangles.extend(
                     [
                         face_vertex_indices[idx],
                         face_vertex_indices[idx + 1],
                         face_vertex_indices[idx + 2],
                     ]
                 )
-                indices.extend(
+                triangles.extend(
                     [
                         face_vertex_indices[idx],
                         face_vertex_indices[idx + 2],
@@ -135,7 +135,7 @@ class UsdRerunLogger:
             else:
                 # For polygons with more vertices, use simple fan triangulation
                 for i in range(1, count - 1):
-                    indices.extend(
+                    triangles.extend(
                         [
                             face_vertex_indices[idx],
                             face_vertex_indices[idx + i],
@@ -145,66 +145,85 @@ class UsdRerunLogger:
             idx += count
 
         # Convert to numpy array and reshape for Rerun
-        indices_array = np.array(indices, dtype=np.uint32).reshape(-1, 3)
-        print(
-            f"Mesh {entity_path} has {len(vertices)} vertices and {len(indices_array)} triangles"
-        )
+        triangles_list = np.array(triangles, dtype=np.uint32).reshape(-1, 3)
 
         # Get normals if available
-        normals_attr = mesh.GetNormalsAttr()
-        normals = None
-        if normals_attr:
-            normals_data = normals_attr.Get()
-            if normals_data:
-                normals = np.array(
-                    [(n[0], n[1], n[2]) for n in normals_data], dtype=np.float32
-                )
+        normals = np.array(mesh.GetNormalsAttr().Get())
+
+        # Get UVs if available
+        texcoords = np.array(mesh.GetPrim().GetAttribute("primvars:st").Get())
 
         # --- Material and Texture Handling ---
-        texcoords = None
         texture_buffer = None
-        # texture_format = None
-        albedo_factor = None
 
-        # Get UVs
-        uvs = self._get_uvs(mesh)
-        if uvs is not None:
-            texcoords = uvs
+        subsets = UsdGeom.Subset.GetAllGeomSubsets(mesh)
+        if subsets:
+            for subset in subsets:
+                if subset.GetElementTypeAttr().Get() != UsdGeom.Tokens.face:
+                    print(
+                        "Warning: Unsupported subset element type:",
+                        subset.GetElementTypeAttr().Get(),
+                    )
+                    continue
 
-        # Get Material Info
-        color, texture_path = self._get_material_info(prim)
-        print(
-            f"Material info for {entity_path}: color={color}, texture_path={texture_path}"
+                # Rearrange the mesh data to only include the subset
+                included_triangles = subset.GetIndicesAttr().Get()
+                if not included_triangles:
+                    continue
+
+                # Filter triangles to only include those in the subset
+                print(" Total triangles:", len(triangles_list))
+                subset_triangles = triangles_list[included_triangles]
+                print(" Subset triangles:", len(subset_triangles))
+
+                # TODO: Remove unused vertices
+
+                texture_path = self._get_image_texture_path(subset.GetPrim())
+                texture_buffer = self._load_texture(texture_path)
+
+                self._log_mesh_data(
+                    str(subset.GetPath()),
+                    vertices,
+                    np.array(subset_triangles),
+                    normals,
+                    texcoords,
+                    texture_buffer,
+                )
+
+        else:
+            texture_path = self._get_image_texture_path(prim)
+            texture_buffer = self._load_texture(texture_path)
+
+            self._log_mesh_data(
+                entity_path,
+                vertices,
+                triangles_list,
+                normals,
+                texcoords,
+                texture_buffer,
+            )
+
+    def _log_mesh_data(
+        self,
+        entity_path: str,
+        vertices: np.ndarray,
+        triangles_list: np.ndarray,
+        normals: np.ndarray = None,
+        texcoords: np.ndarray = None,
+        texture_buffer: np.ndarray = None,
+        albedo_factor: tuple = None,
+    ):
+        rr.log(
+            entity_path,
+            rr.Mesh3D(
+                vertex_positions=vertices,
+                triangle_indices=triangles_list,
+                vertex_normals=normals,
+                vertex_texcoords=texcoords,
+                albedo_texture=texture_buffer,
+                albedo_factor=albedo_factor,
+            ),
         )
-        if color:
-            albedo_factor = color
-        if texture_path:
-            data, format = self._load_texture(texture_path)
-            if data is not None:
-                texture_buffer = data
-                # texture_format = format
-
-        print(
-            f"Logging mesh {entity_path} with {len(vertices)} vertices and {len(indices_array)} triangles"
-        )
-
-        # Log the mesh to Rerun
-        mesh_args = {
-            "vertex_positions": vertices,
-            "triangle_indices": indices_array,
-        }
-        if normals is not None and len(normals) == len(vertices):
-            mesh_args["vertex_normals"] = normals
-        if texcoords is not None and len(texcoords) == len(vertices):
-            mesh_args["vertex_texcoords"] = texcoords
-
-        if texture_buffer is not None:
-            mesh_args["albedo_texture"] = texture_buffer
-
-        if albedo_factor is not None:
-            mesh_args["albedo_factor"] = albedo_factor
-
-        rr.log(entity_path, rr.Mesh3D(**mesh_args))
 
     def clear_logged_meshes(self):
         """Clear the cache of logged meshes, allowing them to be logged again."""
@@ -227,80 +246,165 @@ class UsdRerunLogger:
                     return np.array([(u[0], u[1]) for u in uvs], dtype=np.float32)
         return None
 
-    def _get_material_info(self, prim: Usd.Prim):
+    def _get_image_texture_path(self, prim: Usd.Prim):
         """
         Get material color or texture path.
-        Returns: (color_tuple, texture_path)
+        Returns: texture_path or None
         """
+        # return "/home/azazdeaz/repos/art/go2-example/isaac-rerun-logger/assets/uv1.png"
         binding_api = UsdShade.MaterialBindingAPI(prim)
         material: UsdShade.Material = binding_api.ComputeBoundMaterial()[0]
         if not material:
-            return None, None
+            print(f"No material found for prim {prim.GetPath()}.")
+            return None
 
-        shader = material.ComputeSurfaceSource()[0]
+        direct_binding = binding_api.GetDirectBinding()
+        print(f"Direct binding: {direct_binding}")
+        material = direct_binding.GetMaterial()
+        print(f"Material after direct binding: {material}")
+
+        print(f"\n\n\nFound material: {material.GetPath()}")
+
+        shader: UsdShade.Shader = material.ComputeSurfaceSource()[0]
         if not shader:
-            return None, None
+            print("No surface shader found.")
+            return None
 
-        # List of inputs to check for color/texture
-        input_names = [
-            "diffuseColor",
-            "albedo",
-            "color",
-            "base_color",
-            "diffuse_texture",
-            "albedo_texture",
-            "base_color_texture",
-        ]
+        implementation_source = shader.GetImplementationSource()
 
-        for name in input_names:
-            input_attr = shader.GetInput(name)
-            if not input_attr:
-                continue
+        if (
+            implementation_source == "id"
+            and shader.GetIdAttr().Get() == "UsdPreviewSurface"
+        ):
+            diffuse_color = shader.GetInput("diffuseColor")
+            # diffuse_color = shader.GetInput("diffuse_texture")
+            print(f"Diffuse Color Input: {diffuse_color}")
+            print(
+                f" - Connected attributes: {diffuse_color.GetValueProducingAttribute()}"
+            )
 
-            # 1. Check for connections (Texture)
-            if input_attr.HasConnectedSource():
-                source, source_name, _ = input_attr.GetConnectedSource()
-                if source:
-                    source_prim = source.GetPrim()
+            diffuse_color_source: UsdShade.ConnectableAPI = (
+                diffuse_color.GetConnectedSource()[0]
+            )
+            print(f"Diffuse Color Connected Source: {diffuse_color_source}")
 
-                    # Case A: Connected to UsdUVTexture (common in UsdPreviewSurface)
-                    if source_prim.GetTypeName() == "UsdUVTexture":
-                        file_input = source.GetInput("file")
-                        if file_input:
-                            file_path = file_input.Get()
-                            if file_path:
-                                path = (
-                                    file_path.path
-                                    if hasattr(file_path, "path")
-                                    else str(file_path)
-                                )
-                                return None, path
+            diffuse_color_source_file = diffuse_color_source.GetInput("file")
+            diffuse_color_source_file_path = diffuse_color_source_file.Get()
 
-                    # Case B: Connected to Material input (common in OmniPBR / MDL)
-                    elif source_prim.IsA(UsdShade.Material):
-                        material_input = source.GetInput(source_name)
-                        if material_input:
-                            val = material_input.Get()
-                            if val:
-                                path = val.path if hasattr(val, "path") else str(val)
-                                if path:
-                                    return None, path
+            if not diffuse_color_source_file_path or not isinstance(
+                diffuse_color_source_file_path, Sdf.AssetPath
+            ):
+                print("Diffuse color source is not a valid texture file path.")
+                return None
 
-            # 2. Check for direct value (Color)
-            value = input_attr.Get()
-            if value:
-                if isinstance(value, Gf.Vec3f):
-                    return (
-                        int(value[0] * 255),
-                        int(value[1] * 255),
-                        int(value[2] * 255),
-                        255,
-                    ), None
+            diffuse_color_source_st = diffuse_color_source.GetInput("st")
 
-        return None, None
+            print(f"Shader input: {diffuse_color_source_st.GetFullName()}")
+            print(" - Get", diffuse_color_source_st.Get())
+            print(" - GetAttr", diffuse_color_source_st.GetAttr())
+            print(" - GetBaseName", diffuse_color_source_st.GetBaseName())
+            print(" - GetConnectability", diffuse_color_source_st.GetConnectability())
+            print(" - GetConnectedSource", diffuse_color_source_st.GetConnectedSource())
+            print(
+                " - GetConnectedSources", diffuse_color_source_st.GetConnectedSources()
+            )
+            print(" - GetDisplayGroup", diffuse_color_source_st.GetDisplayGroup())
+            print(" - GetDocumentation", diffuse_color_source_st.GetDocumentation())
+            print(" - GetFullName", diffuse_color_source_st.GetFullName())
+            print(" - GetPrim", diffuse_color_source_st.GetPrim())
+            print(
+                " - GetRawConnectedSourcePaths",
+                diffuse_color_source_st.GetRawConnectedSourcePaths(),
+            )
+            print(" - GetRenderType", diffuse_color_source_st.GetRenderType())
+            print(" - GetSdrMetadata", diffuse_color_source_st.GetSdrMetadata())
+            print(" - GetTypeName", diffuse_color_source_st.GetTypeName())
+            print(
+                " - GetValueProducingAttribute",
+                diffuse_color_source_st.GetValueProducingAttribute(),
+            )
+            print(
+                " - GetValueProducingAttributes",
+                diffuse_color_source_st.GetValueProducingAttributes(),
+            )
+
+            st_source = diffuse_color_source_st.GetConnectedSource()[0]
+            print(f"ST Connected Source: {st_source}")
+
+            # print(" - Get", diffuse_color_source.Get())
+            # print(" - GetConnectedSource", diffuse_color_source.GetConnectedSource())
+            # print(" - GetConnectedSources", diffuse_color_source.GetConnectedSources())
+            # print(" - GetInput", diffuse_color_source.GetInput())
+            print(" - GetInputs", [i.GetFullName() for i in st_source.GetInputs()])
+            # print(" - GetOutput", diffuse_color_source.GetOutput())
+            print(" - GetOutputs", [o.GetFullName() for o in st_source.GetOutputs()])
+            # print(" - GetRawConnectedSourcePaths", diffuse_color_source.GetRawConnectedSourcePaths())
+            print(" - GetSchemaAttributeNames", st_source.GetSchemaAttributeNames())
+
+            st_source_varname = st_source.GetInput("varname")
+            print(f"Shader input: {st_source_varname.GetFullName()}")
+            print(" - Get", st_source_varname.Get())
+            print(" - GetAttr", st_source_varname.GetAttr())
+            print(" - GetBaseName", st_source_varname.GetBaseName())
+            print(" - GetConnectability", st_source_varname.GetConnectability())
+            print(" - GetConnectedSource", st_source_varname.GetConnectedSource())
+            print(" - GetConnectedSources", st_source_varname.GetConnectedSources())
+            print(" - GetDisplayGroup", st_source_varname.GetDisplayGroup())
+            print(" - GetDocumentation", st_source_varname.GetDocumentation())
+            print(" - GetFullName", st_source_varname.GetFullName())
+            print(" - GetPrim", st_source_varname.GetPrim())
+            print(
+                " - GetRawConnectedSourcePaths",
+                st_source_varname.GetRawConnectedSourcePaths(),
+            )
+            print(" - GetRenderType", st_source_varname.GetRenderType())
+            print(" - GetSdrMetadata", st_source_varname.GetSdrMetadata())
+            print(" - GetTypeName", st_source_varname.GetTypeName())
+            print(
+                " - GetValueProducingAttribute",
+                st_source_varname.GetValueProducingAttribute(),
+            )
+            print(
+                " - GetValueProducingAttributes",
+                st_source_varname.GetValueProducingAttributes(),
+            )
+
+            value_producing_attributes = UsdShade.Utils.GetValueProducingAttributes(
+                st_source_varname
+            )[0].Get()
+            print(" - Value Producing Attributes:", (type(value_producing_attributes)))
+
+            return None, diffuse_color_source_file_path.resolvedPath
+
+        elif (
+            implementation_source == UsdShade.Tokens.sourceAsset
+            and shader.GetPrim()
+            .GetAttribute("info:mdl:sourceAsset:subIdentifier")
+            .Get()
+            == "OmniPBR"
+        ):
+            print("OmniPBR shader detected")
+            diffuse_texture = shader.GetInput("diffuse_texture")
+            print(diffuse_texture.GetConnectedSource())
+            diffuse_texture_source, input_name, _ = diffuse_texture.GetConnectedSource()
+            diffuse_texture_source_file = diffuse_texture_source.GetInput(
+                input_name
+            ).Get()
+            if not diffuse_texture_source_file or not isinstance(
+                diffuse_texture_source_file, Sdf.AssetPath
+            ):
+                print("Diffuse texture source is not a valid texture file path.")
+                return None
+            return diffuse_texture_source_file.resolvedPath
+        else:
+            print(f"Unsupported shader type: {shader.GetIdAttr().Get()}")
+            return None
 
     def _load_texture(self, texture_path):
         """Load texture from path."""
+        if not texture_path:
+            return None
+        print(f"Loading texture from: {texture_path}")
         try:
             # Resolve path relative to stage
             if not os.path.isabs(texture_path):
@@ -311,29 +415,29 @@ class UsdRerunLogger:
                     )
 
             if not os.path.exists(texture_path):
-                return None, None
+                print(f"Warning: Texture file does not exist: {texture_path}")
+                return None
 
-            image = Image.open(texture_path)
-            image = image.convert("RGBA")
-            width, height = image.size
-            data = np.array(image)
+            with Image.open(texture_path) as img:
+                img = img.convert("RGBA")  # Ensure 4 channels
+                img_data = np.array(img)
+                print(f" Texture size: {img_data.shape}")
+                return img_data
 
-            return data, rr.datatypes.ImageFormat(
-                width=width, height=height, color_model="RGBA", channel_datatype="U8"
-            )
         except Exception as e:
             print(f"Failed to load texture {texture_path}: {e}")
-            return None, None
+            return None
 
 
 if __name__ == "__main__":
     test_usds = [
         # "/home/azazdeaz/repos/art/go2-example/assets/rail_blocks/rail_blocks.usd",
-        # "/home/azazdeaz/repos/art/go2-example/assets/excavator_scan/excavator.usd",
-        # "/home/azazdeaz/repos/art/go2-example/isaac-rerun-logger/assets/block.usd",
+        "/home/azazdeaz/repos/art/go2-example/assets/excavator_scan/excavator.usd",
+        # "/home/azazdeaz/repos/art/go2-example/assets/stone_stairs/stone_stairs_f.usd",
         # "/home/azazdeaz/repos/art/go2-example/isaac-rerun-logger/assets/dex_cube_instanceable.usd",
-        # "/home/azazdeaz/repos/art/go2-example/isaac-rerun-logger/assets/colored_cube.usda",
-        "/home/azazdeaz/repos/art/go2-example/isaac-rerun-logger/assets/Collected_block_letter/block_letter.usda",
+        # "/home/azazdeaz/repos/art/go2-example/isaac-rerun-logger/assets/Collected_dex_cube_instanceable/dex_cube_instanceable.usda",
+        # "/home/azazdeaz/repos/art/go2-example/isaac-rerun-logger/assets/simpleShading.usda",
+        # "/home/azazdeaz/repos/art/go2-example/isaac-rerun-logger/assets/Collected_block_letter/block_letter_flat.usda",
     ]
     for usd_path in test_usds:
         print(f"\n\n\n>> Logging USD stage: {usd_path}")
