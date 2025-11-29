@@ -1,8 +1,9 @@
-from pxr import Usd, UsdGeom, Gf, UsdShade, Sdf
-import rerun as rr
-import numpy as np
-from PIL import Image
 import os
+
+import numpy as np
+import rerun as rr
+from PIL import Image
+from pxr import Gf, Sdf, Usd, UsdGeom, UsdShade
 
 
 class UsdRerunLogger:
@@ -75,16 +76,7 @@ class UsdRerunLogger:
         mesh = UsdGeom.Mesh(prim)
 
         # Get vertex positions
-        points_attr = mesh.GetPointsAttr()
-        if not points_attr:
-            return
-
-        points = points_attr.Get()
-        if not points:
-            return
-
-        # Convert to numpy array
-        vertices = np.array([(p[0], p[1], p[2]) for p in points], dtype=np.float32)
+        vertices = np.array(mesh.GetPointsAttr().Get())
 
         # Get face vertex indices
         face_vertex_indices_attr = mesh.GetFaceVertexIndicesAttr()
@@ -148,7 +140,20 @@ class UsdRerunLogger:
         triangles_list = np.array(triangles, dtype=np.uint32).reshape(-1, 3)
 
         # Get normals if available
-        normals = np.array(mesh.GetNormalsAttr().Get())
+        normals_attr = mesh.GetNormalsAttr()
+        normals = np.array(normals_attr.Get())
+        normals_interpolation = normals_attr.GetMetadata("interpolation")
+        if normals_interpolation == "faceVarying":
+            # Convert face-varying normals to vertex normals
+            vertex_normals = np.zeros_like(vertices)
+            indices = np.array(face_vertex_indices)
+            np.add.at(vertex_normals, indices, normals)
+
+            # Normalize
+            norms = np.linalg.norm(vertex_normals, axis=1, keepdims=True)
+            norms[norms == 0] = 1
+            vertex_normals = vertex_normals / norms
+            normals = vertex_normals
 
         # Get UVs if available
         texcoords = np.array(mesh.GetPrim().GetAttribute("primvars:st").Get())
@@ -229,29 +234,12 @@ class UsdRerunLogger:
         """Clear the cache of logged meshes, allowing them to be logged again."""
         self._logged_meshes.clear()
 
-    def _get_uvs(self, mesh: UsdGeom.Mesh):
-        """Get UV coordinates from the mesh."""
-        primvars_api = UsdGeom.PrimvarsAPI(mesh.GetPrim())
-        for name in ["st", "uv", "texcoord", "texture_coordinates"]:
-            primvar = primvars_api.GetPrimvar(name)
-            if primvar and primvar.IsDefined():
-                uvs = primvar.Get()
-                if uvs:
-                    print(f"Found UVs with primvar '{name}'")
-                    print(f"Sample UVs: {uvs[:5]}")
-                    print(f"UVs length: {len(uvs)}")
-                    indices = primvar.GetIndices()
-                    if indices:
-                        uvs = [uvs[i] for i in indices]
-                    return np.array([(u[0], u[1]) for u in uvs], dtype=np.float32)
-        return None
-
     def _get_image_texture_path(self, prim: Usd.Prim):
         """
         Get material color or texture path.
         Returns: texture_path or None
         """
-        # return "/home/azazdeaz/repos/art/go2-example/isaac-rerun-logger/assets/uv1.png"
+        # return "/home/azazdeaz/repos/art/go2-example/assets/stone_stairs/stonestairs_c/SubUSDs/textures/Stairs stone tile_Bake1_PBR_Diffuse.png"
         binding_api = UsdShade.MaterialBindingAPI(prim)
         material: UsdShade.Material = binding_api.ComputeBoundMaterial()[0]
         if not material:
@@ -419,7 +407,10 @@ class UsdRerunLogger:
                 return None
 
             with Image.open(texture_path) as img:
-                img = img.convert("RGBA")  # Ensure 4 channels
+                img = img.convert("RGB")  # Ensure 3 channels
+                # mirror the image vertically and horizontally
+                img = img.transpose(Image.FLIP_TOP_BOTTOM)
+                # img = img.transpose(Image.FLIP_LEFT_RIGHT)
                 img_data = np.array(img)
                 print(f" Texture size: {img_data.shape}")
                 return img_data
@@ -432,10 +423,10 @@ class UsdRerunLogger:
 if __name__ == "__main__":
     test_usds = [
         # "/home/azazdeaz/repos/art/go2-example/assets/rail_blocks/rail_blocks.usd",
-        "/home/azazdeaz/repos/art/go2-example/assets/excavator_scan/excavator.usd",
+        # "/home/azazdeaz/repos/art/go2-example/assets/excavator_scan/excavator.usd",
         # "/home/azazdeaz/repos/art/go2-example/assets/stone_stairs/stone_stairs_f.usd",
         # "/home/azazdeaz/repos/art/go2-example/isaac-rerun-logger/assets/dex_cube_instanceable.usd",
-        # "/home/azazdeaz/repos/art/go2-example/isaac-rerun-logger/assets/Collected_dex_cube_instanceable/dex_cube_instanceable.usda",
+        "/home/azazdeaz/repos/art/go2-example/isaac-rerun-logger/assets/Collected_dex_cube_instanceable/dex_cube_instanceable.usda",
         # "/home/azazdeaz/repos/art/go2-example/isaac-rerun-logger/assets/simpleShading.usda",
         # "/home/azazdeaz/repos/art/go2-example/isaac-rerun-logger/assets/Collected_block_letter/block_letter_flat.usda",
     ]
