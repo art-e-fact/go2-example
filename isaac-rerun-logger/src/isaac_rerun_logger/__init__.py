@@ -10,9 +10,29 @@ class UsdRerunLogger:
     """Visualize USD stages in Rerun."""
 
     def __init__(self, stage: Usd.Stage):
-        self.stage = stage
-        rr.init("isaac_rerun_logger", spawn=True)
+        self.stage = None
+        self._logger_id = None
         self._logged_meshes = set()  # Track which meshes we've already logged
+        self._logged_paths = set()  # Track logged prim paths
+
+    def initialize(self, stage: Usd.Stage, logger_id: str = "isaac_rerun_logger"):
+        """Initialize the Rerun logger with a USD stage."""
+        self.stop()
+        self.stage = stage
+        # Add random postfix to logger ID to avoid conflicts
+        self._logger_id = f"{logger_id}_{np.random.randint(10000)}"
+        rr.init(self._logger_id, spawn=True)
+        self._logged_meshes = set()  # Track which meshes we've already logged
+        self._logged_paths = set()  # Track logged prim paths
+
+    def stop(self):
+        """Stop the Rerun logger."""
+        if self._logger_id is not None:
+            rr.disconnect()
+            self._logger_id = None
+            self.stage = None
+            self._logged_meshes.clear()
+            self._logged_paths.clear()
 
     def log_stage(self, frame_idx: int = None):
         """
@@ -21,19 +41,24 @@ class UsdRerunLogger:
         Args:
             frame_idx: Optional frame index for this log. If None, uses static data.
         """
+        if self.stage is None:
+            print("Warning: USD stage is not initialized.")
+            return
         # Set frame index if provided
         if frame_idx is not None:
             rr.set_time("frame_idx", sequence=frame_idx)
 
         # Traverse all prims in the stage
-        # Use Usd.TraverseInstanceProxies to traverse into instanceable prims (references)
+        previous_logged_paths = self._logged_paths.copy()
+        self._logged_paths.clear()
+        # Using Usd.TraverseInstanceProxies to traverse into instanceable prims (references)
         predicate = Usd.TraverseInstanceProxies(Usd.PrimDefaultPredicate)
         for prim in self.stage.Traverse(predicate):
             entity_path = str(prim.GetPath())
+            self._logged_paths.add(entity_path)
 
             # Log transforms for all Xformable prims
-            if prim.IsA(UsdGeom.Xformable):
-                self._log_transform(prim, entity_path)
+            self._log_transform(prim, entity_path)
 
             # Log mesh geometry (only once per unique mesh)
             if prim.IsA(UsdGeom.Mesh):
@@ -48,8 +73,15 @@ class UsdRerunLogger:
                     self._log_cube(prim, entity_path)
                     self._logged_meshes.add(cube_path)
 
+        # Clear the logged paths that are no longer present in the stage
+        for old_path in previous_logged_paths - self._logged_paths:
+            rr.log(old_path, rr.Clear.flat())
+
     def _log_transform(self, prim: Usd.Prim, entity_path: str):
         """Log the transform of an Xformable prim."""
+        if not prim.IsA(UsdGeom.Xformable):
+            return
+
         # Get the local transformation
         xformable = UsdGeom.Xformable(prim)
         transform_matrix = xformable.GetLocalTransformation()
@@ -506,7 +538,7 @@ class UsdRerunLogger:
 if __name__ == "__main__":
     test_usds = [
         # "/home/azazdeaz/repos/art/go2-example/assets/rail_blocks/rail_blocks.usd",
-        "/home/azazdeaz/repos/art/go2-example/assets/excavator_scan/excavator.usd",
+        # "/home/azazdeaz/repos/art/go2-example/assets/excavator_scan/excavator.usd",
         # "/home/azazdeaz/repos/art/go2-example/assets/stone_stairs/stone_stairs_f.usd",
         # "/home/azazdeaz/repos/art/go2-example/isaac-rerun-logger/assets/dex_cube_instanceable.usd",
         # "/home/azazdeaz/repos/art/go2-example/isaac-rerun-logger/assets/Collected_dex_cube_instanceable/dex_cube_instanceable.usda",

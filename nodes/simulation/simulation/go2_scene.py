@@ -213,6 +213,8 @@ class EnvironmentRunner:
 
     def initialize_scene(self):
         self._is_initializing = True
+        self.rerun_logger.stop()
+
         demo_config = add_assets_to_world(self.current_scene, self.difficulty)
 
         self.world.reset()
@@ -254,6 +256,8 @@ class EnvironmentRunner:
 
         self.camera_manager.initialize()
         self.camera_manager.link_waypoint_mission(self.waypoint_mission)
+
+        self.rerun_logger.initialize(self.world.stage)
 
         # TODO: find a better way to separate artefacts outputs per test run
         self.camera_manager.start_writers(
@@ -330,7 +334,8 @@ class EnvironmentRunner:
             return
 
         self.world.step(render=True)
-        self.rerun_logger.log_stage(frame_idx=self.world.current_time_step_index)
+        if self.rerun_logger:
+            self.rerun_logger.log_stage(frame_idx=self.world.current_time_step_index)
 
         self.follow_camera.update()
         self.waypoint_mission.update()
