@@ -76,87 +76,182 @@ class UsdRerunLogger:
         mesh = UsdGeom.Mesh(prim)
 
         # Get vertex positions
-        vertices = np.array(mesh.GetPointsAttr().Get())
+        points_attr = mesh.GetPointsAttr()
+        if not points_attr:
+            return
+        vertices = np.array(points_attr.Get())
 
         # Get face vertex indices
         face_vertex_indices_attr = mesh.GetFaceVertexIndicesAttr()
         face_vertex_counts_attr = mesh.GetFaceVertexCountsAttr()
 
         if not face_vertex_indices_attr or not face_vertex_counts_attr:
-            # If no faces, log as point cloud
             rr.log(entity_path, rr.Points3D(positions=vertices))
             return
 
-        face_vertex_indices = face_vertex_indices_attr.Get()
-        face_vertex_counts = face_vertex_counts_attr.Get()
+        face_vertex_indices = np.array(face_vertex_indices_attr.Get())
+        face_vertex_counts = np.array(face_vertex_counts_attr.Get())
 
-        if not face_vertex_indices or not face_vertex_counts:
+        if face_vertex_indices is None or face_vertex_counts is None:
             rr.log(entity_path, rr.Points3D(positions=vertices))
             return
 
-        # Convert face data to triangle indices
-        # USD supports arbitrary polygons, but Rerun prefers triangles
-        triangles = []
-        idx = 0
-        for count in face_vertex_counts:
-            if count == 3:
-                # Already a triangle
-                triangles.extend(
-                    [
-                        face_vertex_indices[idx],
-                        face_vertex_indices[idx + 1],
-                        face_vertex_indices[idx + 2],
-                    ]
-                )
-            elif count == 4:
-                # Quad - split into two triangles
-                triangles.extend(
-                    [
-                        face_vertex_indices[idx],
-                        face_vertex_indices[idx + 1],
-                        face_vertex_indices[idx + 2],
-                    ]
-                )
-                triangles.extend(
-                    [
-                        face_vertex_indices[idx],
-                        face_vertex_indices[idx + 2],
-                        face_vertex_indices[idx + 3],
-                    ]
-                )
-            else:
-                # For polygons with more vertices, use simple fan triangulation
-                for i in range(1, count - 1):
+        # --- Handle UVs ---
+        # Use UsdGeom.PrimvarsAPI to handle indexed vs non-indexed primvars correctly
+        primvars_api = UsdGeom.PrimvarsAPI(prim)
+        st_primvar = primvars_api.GetPrimvar("st")
+
+        texcoords = None
+        st_interpolation = "constant"
+
+        if st_primvar:
+            st_interpolation = st_primvar.GetInterpolation()
+
+            # Get the data, resolving indices if present
+            st_data = st_primvar.Get()
+            st_indices = st_primvar.GetIndices()
+
+            if st_data is not None:
+                st_data = np.array(st_data)
+                if st_indices:
+                    st_indices = np.array(st_indices)
+                    texcoords = st_data[st_indices]
+                else:
+                    texcoords = st_data
+
+            print(
+                f"Texcoords shape: {texcoords.shape if texcoords is not None else 'None'}"
+            )
+            print(f"Vertices shape: {vertices.shape}")
+            print(f"ST Interpolation: {st_interpolation}")
+
+        # --- Handle Normals ---
+        normals_attr = mesh.GetNormalsAttr()
+        normals = None
+        normals_interpolation = "constant"
+        if normals_attr.HasValue():
+            normals = np.array(normals_attr.Get())
+            normals_interpolation = normals_attr.GetMetadata("interpolation")
+
+        # --- Flattening Logic ---
+        # If UVs or Normals are face-varying, we must flatten the mesh to a triangle soup
+        should_flatten = (st_interpolation == "faceVarying") or (
+            normals_interpolation == "faceVarying"
+        )
+
+        # Fallback: if texcoords length matches face_vertex_indices length, treat as face-varying
+        # (This handles cases where metadata might be missing or ambiguous but data shape is clear)
+        if (
+            texcoords is not None
+            and len(texcoords) == len(face_vertex_indices)
+            and len(texcoords) != len(vertices)
+        ):
+            should_flatten = True
+
+        triangles_list = None
+
+        # Map for subsets: face_index -> list of triangle_indices
+        face_to_triangle_indices = [[] for _ in range(len(face_vertex_counts))]
+        current_triangle_index = 0
+
+        if should_flatten:
+            print("Expanding vertices for face-varying data...")
+            # Flatten positions: Create a new vertex for every face corner
+            vertices = vertices[face_vertex_indices]
+
+            # Flatten normals if they are vertex-interpolated
+            if normals is not None:
+                if normals_interpolation == "vertex":
+                    normals = normals[face_vertex_indices]
+                # if faceVarying, normals should already match face_vertex_indices length
+
+            # Flatten UVs if they are vertex-interpolated
+            if texcoords is not None:
+                if st_interpolation == "vertex":
+                    texcoords = texcoords[face_vertex_indices]
+                # if faceVarying, texcoords should already match face_vertex_indices length
+
+            # Generate trivial triangles (0,1,2), (3,4,5)...
+            # But we must respect the polygon counts (3, 4, etc.)
+            triangles = []
+            idx = 0
+            for face_idx, count in enumerate(face_vertex_counts):
+                # The vertices for this face are at indices [idx, idx+1, ... idx+count-1] in our new arrays
+                if count == 3:
+                    triangles.extend([idx, idx + 1, idx + 2])
+                    face_to_triangle_indices[face_idx].append(current_triangle_index)
+                    current_triangle_index += 1
+                elif count == 4:
+                    triangles.extend([idx, idx + 1, idx + 2])
+                    face_to_triangle_indices[face_idx].append(current_triangle_index)
+                    current_triangle_index += 1
+
+                    triangles.extend([idx, idx + 2, idx + 3])
+                    face_to_triangle_indices[face_idx].append(current_triangle_index)
+                    current_triangle_index += 1
+                else:
+                    # Fan triangulation
+                    for i in range(1, count - 1):
+                        triangles.extend([idx, idx + i, idx + i + 1])
+                        face_to_triangle_indices[face_idx].append(
+                            current_triangle_index
+                        )
+                        current_triangle_index += 1
+                idx += count
+
+            triangles_list = np.array(triangles, dtype=np.uint32).reshape(-1, 3)
+
+        else:
+            # Standard indexed mesh path (shared vertices)
+            triangles = []
+            idx = 0
+            for face_idx, count in enumerate(face_vertex_counts):
+                if count == 3:
                     triangles.extend(
                         [
                             face_vertex_indices[idx],
-                            face_vertex_indices[idx + i],
-                            face_vertex_indices[idx + i + 1],
+                            face_vertex_indices[idx + 1],
+                            face_vertex_indices[idx + 2],
                         ]
                     )
-            idx += count
+                    face_to_triangle_indices[face_idx].append(current_triangle_index)
+                    current_triangle_index += 1
+                elif count == 4:
+                    triangles.extend(
+                        [
+                            face_vertex_indices[idx],
+                            face_vertex_indices[idx + 1],
+                            face_vertex_indices[idx + 2],
+                        ]
+                    )
+                    face_to_triangle_indices[face_idx].append(current_triangle_index)
+                    current_triangle_index += 1
 
-        # Convert to numpy array and reshape for Rerun
-        triangles_list = np.array(triangles, dtype=np.uint32).reshape(-1, 3)
+                    triangles.extend(
+                        [
+                            face_vertex_indices[idx],
+                            face_vertex_indices[idx + 2],
+                            face_vertex_indices[idx + 3],
+                        ]
+                    )
+                    face_to_triangle_indices[face_idx].append(current_triangle_index)
+                    current_triangle_index += 1
+                else:
+                    for i in range(1, count - 1):
+                        triangles.extend(
+                            [
+                                face_vertex_indices[idx],
+                                face_vertex_indices[idx + i],
+                                face_vertex_indices[idx + i + 1],
+                            ]
+                        )
+                        face_to_triangle_indices[face_idx].append(
+                            current_triangle_index
+                        )
+                        current_triangle_index += 1
+                idx += count
 
-        # Get normals if available
-        normals_attr = mesh.GetNormalsAttr()
-        normals = np.array(normals_attr.Get())
-        normals_interpolation = normals_attr.GetMetadata("interpolation")
-        if normals_interpolation == "faceVarying":
-            # Convert face-varying normals to vertex normals
-            vertex_normals = np.zeros_like(vertices)
-            indices = np.array(face_vertex_indices)
-            np.add.at(vertex_normals, indices, normals)
-
-            # Normalize
-            norms = np.linalg.norm(vertex_normals, axis=1, keepdims=True)
-            norms[norms == 0] = 1
-            vertex_normals = vertex_normals / norms
-            normals = vertex_normals
-
-        # Get UVs if available
-        texcoords = np.array(mesh.GetPrim().GetAttribute("primvars:st").Get())
+            triangles_list = np.array(triangles, dtype=np.uint32).reshape(-1, 3)
 
         # --- Material and Texture Handling ---
         texture_buffer = None
@@ -172,13 +267,23 @@ class UsdRerunLogger:
                     continue
 
                 # Rearrange the mesh data to only include the subset
-                included_triangles = subset.GetIndicesAttr().Get()
-                if not included_triangles:
+                included_faces = subset.GetIndicesAttr().Get()
+                if not included_faces:
                     continue
 
-                # Filter triangles to only include those in the subset
+                # Collect all triangles for these faces
+                subset_triangle_indices = []
+                for face_idx in included_faces:
+                    if face_idx < len(face_to_triangle_indices):
+                        subset_triangle_indices.extend(
+                            face_to_triangle_indices[face_idx]
+                        )
+
+                if not subset_triangle_indices:
+                    continue
+
                 print(" Total triangles:", len(triangles_list))
-                subset_triangles = triangles_list[included_triangles]
+                subset_triangles = triangles_list[subset_triangle_indices]
                 print(" Subset triangles:", len(subset_triangles))
 
                 # TODO: Remove unused vertices
@@ -239,7 +344,6 @@ class UsdRerunLogger:
         Get material color or texture path.
         Returns: texture_path or None
         """
-        # return "/home/azazdeaz/repos/art/go2-example/assets/stone_stairs/stonestairs_c/SubUSDs/textures/Stairs stone tile_Bake1_PBR_Diffuse.png"
         binding_api = UsdShade.MaterialBindingAPI(prim)
         material: UsdShade.Material = binding_api.ComputeBoundMaterial()[0]
         if not material:
@@ -256,9 +360,18 @@ class UsdRerunLogger:
         shader: UsdShade.Shader = material.ComputeSurfaceSource()[0]
         if not shader:
             print("No surface shader found.")
-            return None
+            mdl_surface = material.GetOutput("mdl:surface")
+            if mdl_surface and mdl_surface.HasConnectedSource():
+                source, sourceName, sourceType = mdl_surface.GetConnectedSource()
+                print(f"Connected source: {source.GetPath()}")
+                print(f"Source Name: {sourceName}")
+                print(f"Source Type: {sourceType}")
+                shader = UsdShade.Shader(source)
+            else:
+                return None
 
         implementation_source = shader.GetImplementationSource()
+        print(f"Shader Implementation Source: {implementation_source}")
 
         if (
             implementation_source == "id"
@@ -285,83 +398,6 @@ class UsdRerunLogger:
                 print("Diffuse color source is not a valid texture file path.")
                 return None
 
-            diffuse_color_source_st = diffuse_color_source.GetInput("st")
-
-            print(f"Shader input: {diffuse_color_source_st.GetFullName()}")
-            print(" - Get", diffuse_color_source_st.Get())
-            print(" - GetAttr", diffuse_color_source_st.GetAttr())
-            print(" - GetBaseName", diffuse_color_source_st.GetBaseName())
-            print(" - GetConnectability", diffuse_color_source_st.GetConnectability())
-            print(" - GetConnectedSource", diffuse_color_source_st.GetConnectedSource())
-            print(
-                " - GetConnectedSources", diffuse_color_source_st.GetConnectedSources()
-            )
-            print(" - GetDisplayGroup", diffuse_color_source_st.GetDisplayGroup())
-            print(" - GetDocumentation", diffuse_color_source_st.GetDocumentation())
-            print(" - GetFullName", diffuse_color_source_st.GetFullName())
-            print(" - GetPrim", diffuse_color_source_st.GetPrim())
-            print(
-                " - GetRawConnectedSourcePaths",
-                diffuse_color_source_st.GetRawConnectedSourcePaths(),
-            )
-            print(" - GetRenderType", diffuse_color_source_st.GetRenderType())
-            print(" - GetSdrMetadata", diffuse_color_source_st.GetSdrMetadata())
-            print(" - GetTypeName", diffuse_color_source_st.GetTypeName())
-            print(
-                " - GetValueProducingAttribute",
-                diffuse_color_source_st.GetValueProducingAttribute(),
-            )
-            print(
-                " - GetValueProducingAttributes",
-                diffuse_color_source_st.GetValueProducingAttributes(),
-            )
-
-            st_source = diffuse_color_source_st.GetConnectedSource()[0]
-            print(f"ST Connected Source: {st_source}")
-
-            # print(" - Get", diffuse_color_source.Get())
-            # print(" - GetConnectedSource", diffuse_color_source.GetConnectedSource())
-            # print(" - GetConnectedSources", diffuse_color_source.GetConnectedSources())
-            # print(" - GetInput", diffuse_color_source.GetInput())
-            print(" - GetInputs", [i.GetFullName() for i in st_source.GetInputs()])
-            # print(" - GetOutput", diffuse_color_source.GetOutput())
-            print(" - GetOutputs", [o.GetFullName() for o in st_source.GetOutputs()])
-            # print(" - GetRawConnectedSourcePaths", diffuse_color_source.GetRawConnectedSourcePaths())
-            print(" - GetSchemaAttributeNames", st_source.GetSchemaAttributeNames())
-
-            st_source_varname = st_source.GetInput("varname")
-            print(f"Shader input: {st_source_varname.GetFullName()}")
-            print(" - Get", st_source_varname.Get())
-            print(" - GetAttr", st_source_varname.GetAttr())
-            print(" - GetBaseName", st_source_varname.GetBaseName())
-            print(" - GetConnectability", st_source_varname.GetConnectability())
-            print(" - GetConnectedSource", st_source_varname.GetConnectedSource())
-            print(" - GetConnectedSources", st_source_varname.GetConnectedSources())
-            print(" - GetDisplayGroup", st_source_varname.GetDisplayGroup())
-            print(" - GetDocumentation", st_source_varname.GetDocumentation())
-            print(" - GetFullName", st_source_varname.GetFullName())
-            print(" - GetPrim", st_source_varname.GetPrim())
-            print(
-                " - GetRawConnectedSourcePaths",
-                st_source_varname.GetRawConnectedSourcePaths(),
-            )
-            print(" - GetRenderType", st_source_varname.GetRenderType())
-            print(" - GetSdrMetadata", st_source_varname.GetSdrMetadata())
-            print(" - GetTypeName", st_source_varname.GetTypeName())
-            print(
-                " - GetValueProducingAttribute",
-                st_source_varname.GetValueProducingAttribute(),
-            )
-            print(
-                " - GetValueProducingAttributes",
-                st_source_varname.GetValueProducingAttributes(),
-            )
-
-            value_producing_attributes = UsdShade.Utils.GetValueProducingAttributes(
-                st_source_varname
-            )[0].Get()
-            print(" - Value Producing Attributes:", (type(value_producing_attributes)))
-
             return None, diffuse_color_source_file_path.resolvedPath
 
         elif (
@@ -373,6 +409,12 @@ class UsdRerunLogger:
         ):
             print("OmniPBR shader detected")
             diffuse_texture = shader.GetInput("diffuse_texture")
+            if not diffuse_texture:
+                print("No diffuse_texture input found in OmniPBR shader.")
+                print(
+                    "Shader inputs:", [inp.GetBaseName() for inp in shader.GetInputs()]
+                )
+                return None
             print(diffuse_texture.GetConnectedSource())
             diffuse_texture_source, input_name, _ = diffuse_texture.GetConnectedSource()
             diffuse_texture_source_file = diffuse_texture_source.GetInput(
@@ -384,6 +426,28 @@ class UsdRerunLogger:
                 print("Diffuse texture source is not a valid texture file path.")
                 return None
             return diffuse_texture_source_file.resolvedPath
+
+        elif (
+            implementation_source == UsdShade.Tokens.sourceAsset
+            and shader.GetPrim()
+            .GetAttribute("info:mdl:sourceAsset:subIdentifier")
+            .Get()
+            == "gltf_material"
+        ):
+            print("gltf_material shader detected")
+            diffuse_texture = shader.GetInput("base_color_texture")
+            print(diffuse_texture.GetConnectedSource())
+            diffuse_texture_source = diffuse_texture.GetConnectedSource()[0]
+            diffuse_texture_source_file: Sdf.AssetPath = (
+                diffuse_texture_source.GetInput("texture").Get()
+            )
+            if not diffuse_texture_source_file or not isinstance(
+                diffuse_texture_source_file, Sdf.AssetPath
+            ):
+                print("Diffuse texture source is not a valid texture file path.")
+                return None
+            return diffuse_texture_source_file.resolvedPath
+
         else:
             print(f"Unsupported shader type: {shader.GetIdAttr().Get()}")
             return None
@@ -426,9 +490,10 @@ if __name__ == "__main__":
         # "/home/azazdeaz/repos/art/go2-example/assets/excavator_scan/excavator.usd",
         # "/home/azazdeaz/repos/art/go2-example/assets/stone_stairs/stone_stairs_f.usd",
         # "/home/azazdeaz/repos/art/go2-example/isaac-rerun-logger/assets/dex_cube_instanceable.usd",
-        "/home/azazdeaz/repos/art/go2-example/isaac-rerun-logger/assets/Collected_dex_cube_instanceable/dex_cube_instanceable.usda",
+        # "/home/azazdeaz/repos/art/go2-example/isaac-rerun-logger/assets/Collected_dex_cube_instanceable/dex_cube_instanceable.usda",
         # "/home/azazdeaz/repos/art/go2-example/isaac-rerun-logger/assets/simpleShading.usda",
         # "/home/azazdeaz/repos/art/go2-example/isaac-rerun-logger/assets/Collected_block_letter/block_letter_flat.usda",
+        "/home/azazdeaz/repos/art/go2-example/isaac-rerun-logger/assets/Collected_go2-piamid/go2-piamid.usda",
     ]
     for usd_path in test_usds:
         print(f"\n\n\n>> Logging USD stage: {usd_path}")
