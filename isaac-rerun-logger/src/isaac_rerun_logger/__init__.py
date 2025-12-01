@@ -21,10 +21,6 @@ class UsdRerunLogger:
         Args:
             frame_idx: Optional frame index for this log. If None, uses static data.
         """
-        # Clear the set of logged meshes for this frame
-        # (we want to log meshes once per log_stage call)
-        logged_this_frame = set()
-
         # Set frame index if provided
         if frame_idx is not None:
             rr.set_time("frame_idx", sequence=frame_idx)
@@ -45,29 +41,29 @@ class UsdRerunLogger:
                 if mesh_path not in self._logged_meshes:
                     self._log_mesh(prim, entity_path)
                     self._logged_meshes.add(mesh_path)
-                    logged_this_frame.add(mesh_path)
+
+            if prim.IsA(UsdGeom.Cube):
+                cube_path = str(prim.GetPath())
+                if cube_path not in self._logged_meshes:
+                    self._log_cube(prim, entity_path)
+                    self._logged_meshes.add(cube_path)
 
     def _log_transform(self, prim: Usd.Prim, entity_path: str):
         """Log the transform of an Xformable prim."""
+        # Get the local transformation
         xformable = UsdGeom.Xformable(prim)
+        transform_matrix = xformable.GetLocalTransformation()
+        transform = Gf.Transform(transform_matrix)
 
-        # Get the local transformation matrix
-        local_xform: Gf.Matrix4d = xformable.GetLocalTransformation()
-        translation: Gf.Vec3d = local_xform.ExtractTranslation()
-        quaternion: Gf.Quatd = local_xform.ExtractRotationQuat()
+        quaternion = transform.GetRotation().GetQuat()
 
         # Log the transform to Rerun
         rr.log(
             entity_path,
             rr.Transform3D(
-                translation=(translation[0], translation[1], translation[2]),
-                quaternion=(
-                    quaternion.GetImaginary()[0],
-                    quaternion.GetImaginary()[1],
-                    quaternion.GetImaginary()[2],
-                    quaternion.GetReal(),
-                ),
-                # TODO: set scale
+                translation=transform.GetTranslation(),
+                quaternion=(*quaternion.GetImaginary(), quaternion.GetReal()),
+                scale=transform.GetScale(),
             ),
         )
 
@@ -350,11 +346,6 @@ class UsdRerunLogger:
             print(f"No material found for prim {prim.GetPath()}.")
             return None
 
-        direct_binding = binding_api.GetDirectBinding()
-        print(f"Direct binding: {direct_binding}")
-        material = direct_binding.GetMaterial()
-        print(f"Material after direct binding: {material}")
-
         print(f"\n\n\nFound material: {material.GetPath()}")
 
         shader: UsdShade.Shader = material.ComputeSurfaceSource()[0]
@@ -416,7 +407,11 @@ class UsdRerunLogger:
                 )
                 return None
             print(diffuse_texture.GetConnectedSource())
-            diffuse_texture_source, input_name, _ = diffuse_texture.GetConnectedSource()
+            diffuse_texture_source = diffuse_texture.GetConnectedSource()
+            if not diffuse_texture_source:
+                print("No connected source for diffuse_texture.")
+                return None
+            diffuse_texture_source, input_name, _ = diffuse_texture_source
             diffuse_texture_source_file = diffuse_texture_source.GetInput(
                 input_name
             ).Get()
@@ -483,11 +478,35 @@ class UsdRerunLogger:
             print(f"Failed to load texture {texture_path}: {e}")
             return None
 
+    def _log_cube(self, prim: Usd.Prim, entity_path: str):
+        """Log a cube prim as a Rerun box."""
+        cube = UsdGeom.Cube(prim)
+        size_attr = cube.GetSizeAttr()
+        size = size_attr.Get() if size_attr else 2.0
+        half_size = size / 2.0
+
+        color = None
+        display_color_attr = cube.GetDisplayColorAttr()
+        if display_color_attr and display_color_attr.HasValue():
+            colors = display_color_attr.Get()
+            if colors and len(colors) > 0:
+                c = colors[0]
+                color = (int(c[0] * 255), int(c[1] * 255), int(c[2] * 255))
+
+        rr.log(
+            entity_path,
+            rr.Boxes3D(
+                half_sizes=[half_size, half_size, half_size],
+                colors=color,
+                fill_mode="solid",
+            ),
+        )
+
 
 if __name__ == "__main__":
     test_usds = [
         # "/home/azazdeaz/repos/art/go2-example/assets/rail_blocks/rail_blocks.usd",
-        # "/home/azazdeaz/repos/art/go2-example/assets/excavator_scan/excavator.usd",
+        "/home/azazdeaz/repos/art/go2-example/assets/excavator_scan/excavator.usd",
         # "/home/azazdeaz/repos/art/go2-example/assets/stone_stairs/stone_stairs_f.usd",
         # "/home/azazdeaz/repos/art/go2-example/isaac-rerun-logger/assets/dex_cube_instanceable.usd",
         # "/home/azazdeaz/repos/art/go2-example/isaac-rerun-logger/assets/Collected_dex_cube_instanceable/dex_cube_instanceable.usda",
