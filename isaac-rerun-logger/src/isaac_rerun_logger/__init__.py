@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta
 import os
 from pathlib import Path
 
@@ -29,7 +30,7 @@ class UsdRerunLogger:
 
         # Add random postfix to logger ID to avoid conflicts
         self._logger_id = f"{logger_id}_{np.random.randint(10000)}"
-        rr.init(self._logger_id, spawn=True)
+        rr.init(self._logger_id, spawn=spawn)
         if save_path is not None:
             # Ensure directory exists
             save_path.parent.mkdir(parents=True, exist_ok=True)
@@ -48,19 +49,55 @@ class UsdRerunLogger:
             self._logged_meshes.clear()
             self._last_transforms.clear()
 
-    def log_stage(self, frame_idx: int = None):
+    def set_time(
+        self,
+        sequence: int | None = None,
+        duration: int | float | timedelta | np.timedelta64 | None = None,
+        timestamp: int | float | datetime | np.datetime64 | None = None,
+    ) -> None:
+        """
+        Set the current time of the Rerun logger.
+
+        Used for all subsequent logging on the same thread, until the next call to
+        [`rerun.set_time`][], [`rerun.reset_time`][] or [`rerun.disable_timeline`][].
+
+        For example: `set_time("frame_nr", sequence=frame_nr)`.
+
+        There is no requirement of monotonicity. You can move the time backwards if you like.
+
+        You are expected to set exactly ONE of the arguments `sequence`, `duration`, or `timestamp`.
+        You may NOT change the type of a timeline, so if you use `duration` for a specific timeline,
+        you must only use `duration` for that timeline going forward.
+
+        Parameters
+        ----------
+        sequence:
+            Used for sequential indices, like `frame_nr`.
+            Must be an integer.
+        duration:
+            Used for relative times, like `time_since_start`.
+            Must either be in seconds, a [`datetime.timedelta`][], or [`numpy.timedelta64`][].
+            For nanosecond precision, use `numpy.timedelta64(nanoseconds, 'ns')`.
+        timestamp:
+            Used for absolute time indices, like `capture_time`.
+            Must either be in seconds since Unix epoch, a [`datetime.datetime`][], or [`numpy.datetime64`][].
+            For nanosecond precision, use `numpy.datetime64(nanoseconds, 'ns')`.
+
+        """
+        rr.set_time(
+            "clock",
+            sequence=sequence,
+            duration=duration,
+            timestamp=timestamp,
+        )
+
+    def log_stage(self):
         """
         Log the entire USD stage to Rerun.
-
-        Args:
-            frame_idx: Optional frame index for this log. If None, uses static data.
         """
         if self.stage is None:
             print("Warning: USD stage is not initialized.")
             return
-        # Set frame index if provided
-        if frame_idx is not None:
-            rr.set_time("frame_idx", sequence=frame_idx)
 
         # Traverse all prims in the stage
         current_paths = set()

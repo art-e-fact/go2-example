@@ -176,6 +176,7 @@ class EnvironmentRunner:
             window_size=200, update_interval=100
         )  # 1-second window for 200Hz, update every 100 steps
         self.log_rtf = False
+        self._simulation_time = 0.0
 
     def initialize(self):
         self.world = World(
@@ -293,6 +294,8 @@ class EnvironmentRunner:
         self.load_scene(self.current_scene)
 
     def on_physics_step(self, step_size) -> None:
+        self._simulation_time += step_size
+
         rtf = self._rtf_calculator.step(step_size)
         if rtf is not None and self.log_rtf:
             print(f"Real-Time Factor (RTF): {rtf:.2f}")
@@ -338,7 +341,8 @@ class EnvironmentRunner:
 
         self.world.step(render=True)
         if self.rerun_logger:
-            self.rerun_logger.log_stage(frame_idx=self.world.current_time_step_index)
+            self.rerun_logger.set_time(duration=self._simulation_time)
+            self.rerun_logger.log_stage()
 
         self.follow_camera.update()
         self.waypoint_mission.update()
