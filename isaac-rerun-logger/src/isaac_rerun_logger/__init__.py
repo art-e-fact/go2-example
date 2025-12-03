@@ -14,7 +14,7 @@ class UsdRerunLogger:
         self.stage = None
         self._logger_id = None
         self._logged_meshes = set()  # Track which meshes we've already logged
-        self._logged_paths = set()  # Track logged prim paths
+        self._last_transforms = {}  # Track last logged transforms for change detection
 
     def initialize(
         self,
@@ -35,7 +35,9 @@ class UsdRerunLogger:
             save_path.parent.mkdir(parents=True, exist_ok=True)
             rr.save(save_path)
         self._logged_meshes = set()  # Track which meshes we've already logged
-        self._logged_paths = set()  # Track logged prim paths
+        self._last_transforms: dict[
+            str, Gf.Matrix4d
+        ] = {}  # Track last logged transforms for change detection
 
     def stop(self):
         """Stop the Rerun logger."""
@@ -44,7 +46,7 @@ class UsdRerunLogger:
             self._logger_id = None
             self.stage = None
             self._logged_meshes.clear()
-            self._logged_paths.clear()
+            self._last_transforms.clear()
 
     def log_stage(self, frame_idx: int = None):
         """
@@ -61,8 +63,7 @@ class UsdRerunLogger:
             rr.set_time("frame_idx", sequence=frame_idx)
 
         # Traverse all prims in the stage
-        previous_logged_paths = self._logged_paths.copy()
-        self._logged_paths.clear()
+        current_paths = set()
         # Using Usd.TraverseInstanceProxies to traverse into instanceable prims (references)
         predicate = Usd.TraverseInstanceProxies(Usd.PrimDefaultPredicate)
         for prim in self.stage.Traverse(predicate):
@@ -71,10 +72,11 @@ class UsdRerunLogger:
                 continue
 
             entity_path = str(prim.GetPath())
-            self._logged_paths.add(entity_path)
+            current_paths.add(entity_path)
 
             # Log transforms for all Xformable prims
-            self._log_transform(prim, entity_path)
+            if prim.IsA(UsdGeom.Xformable):
+                self._log_transform(prim, entity_path)
 
             # Log mesh geometry (only once per unique mesh)
             if prim.IsA(UsdGeom.Mesh):
@@ -90,8 +92,10 @@ class UsdRerunLogger:
                     self._logged_meshes.add(cube_path)
 
         # Clear the logged paths that are no longer present in the stage
-        for old_path in previous_logged_paths - self._logged_paths:
-            rr.log(old_path, rr.Clear.flat())
+        for path in list(self._last_transforms.keys()):
+            if path not in current_paths:
+                rr.log(path, rr.Clear.flat())
+                del self._last_transforms[path]
 
     def _log_transform(self, prim: Usd.Prim, entity_path: str):
         """Log the transform of an Xformable prim."""
@@ -100,7 +104,16 @@ class UsdRerunLogger:
 
         # Get the local transformation
         xformable = UsdGeom.Xformable(prim)
-        transform_matrix = xformable.GetLocalTransformation()
+        transform_matrix: Gf.Matrix4d = xformable.GetLocalTransformation()
+
+        if (
+            entity_path in self._last_transforms
+            and self._last_transforms[entity_path] == transform_matrix
+        ):
+            return
+
+        self._last_transforms[entity_path] = transform_matrix
+
         transform = Gf.Transform(transform_matrix)
 
         quaternion = transform.GetRotation().GetQuat()
@@ -163,12 +176,6 @@ class UsdRerunLogger:
                 else:
                     texcoords = st_data
 
-            print(
-                f"Texcoords shape: {texcoords.shape if texcoords is not None else 'None'}"
-            )
-            print(f"Vertices shape: {vertices.shape}")
-            print(f"ST Interpolation: {st_interpolation}")
-
         # --- Handle Normals ---
         normals_attr = mesh.GetNormalsAttr()
         normals = None
@@ -199,7 +206,6 @@ class UsdRerunLogger:
         current_triangle_index = 0
 
         if should_flatten:
-            print("Expanding vertices for face-varying data...")
             # Flatten positions: Create a new vertex for every face corner
             vertices = vertices[face_vertex_indices]
 
@@ -326,9 +332,7 @@ class UsdRerunLogger:
                 if not subset_triangle_indices:
                     continue
 
-                print(" Total triangles:", len(triangles_list))
                 subset_triangles = triangles_list[subset_triangle_indices]
-                print(" Subset triangles:", len(subset_triangles))
 
                 # TODO: Remove unused vertices
 
@@ -395,39 +399,27 @@ class UsdRerunLogger:
             print(f"No material found for prim {prim.GetPath()}.")
             return None
 
-        print(f"\n\n\nFound material: {material.GetPath()}")
-
         shader: UsdShade.Shader = material.ComputeSurfaceSource()[0]
         if not shader:
             print("No surface shader found.")
             mdl_surface = material.GetOutput("mdl:surface")
             if mdl_surface and mdl_surface.HasConnectedSource():
                 source, sourceName, sourceType = mdl_surface.GetConnectedSource()
-                print(f"Connected source: {source.GetPath()}")
-                print(f"Source Name: {sourceName}")
-                print(f"Source Type: {sourceType}")
                 shader = UsdShade.Shader(source)
             else:
                 return None
 
         implementation_source = shader.GetImplementationSource()
-        print(f"Shader Implementation Source: {implementation_source}")
 
         if (
             implementation_source == "id"
             and shader.GetIdAttr().Get() == "UsdPreviewSurface"
         ):
             diffuse_color = shader.GetInput("diffuseColor")
-            # diffuse_color = shader.GetInput("diffuse_texture")
-            print(f"Diffuse Color Input: {diffuse_color}")
-            print(
-                f" - Connected attributes: {diffuse_color.GetValueProducingAttribute()}"
-            )
 
             diffuse_color_source: UsdShade.ConnectableAPI = (
                 diffuse_color.GetConnectedSource()[0]
             )
-            print(f"Diffuse Color Connected Source: {diffuse_color_source}")
 
             diffuse_color_source_file = diffuse_color_source.GetInput("file")
             diffuse_color_source_file_path = diffuse_color_source_file.Get()
@@ -447,7 +439,6 @@ class UsdRerunLogger:
             .Get()
             == "OmniPBR"
         ):
-            print("OmniPBR shader detected")
             diffuse_texture = shader.GetInput("diffuse_texture")
             if not diffuse_texture:
                 print("No diffuse_texture input found in OmniPBR shader.")
@@ -478,7 +469,6 @@ class UsdRerunLogger:
             .Get()
             == "gltf_material"
         ):
-            print("gltf_material shader detected")
             diffuse_texture = shader.GetInput("base_color_texture")
             print(diffuse_texture.GetConnectedSource())
             diffuse_texture_source = diffuse_texture.GetConnectedSource()[0]
@@ -500,7 +490,6 @@ class UsdRerunLogger:
         """Load texture from path."""
         if not texture_path:
             return None
-        print(f"Loading texture from: {texture_path}")
         try:
             # Resolve path relative to stage
             if not os.path.isabs(texture_path):
@@ -520,7 +509,6 @@ class UsdRerunLogger:
                 img = img.transpose(Image.FLIP_TOP_BOTTOM)
                 # img = img.transpose(Image.FLIP_LEFT_RIGHT)
                 img_data = np.array(img)
-                print(f" Texture size: {img_data.shape}")
                 return img_data
 
         except Exception as e:
