@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 
 import numpy as np
 import rerun as rr
@@ -15,13 +16,24 @@ class UsdRerunLogger:
         self._logged_meshes = set()  # Track which meshes we've already logged
         self._logged_paths = set()  # Track logged prim paths
 
-    def initialize(self, stage: Usd.Stage, logger_id: str = "isaac_rerun_logger"):
+    def initialize(
+        self,
+        stage: Usd.Stage,
+        logger_id: str = "isaac_rerun_logger",
+        spawn=True,
+        save_path: Path | None = None,
+    ):
         """Initialize the Rerun logger with a USD stage."""
         self.stop()
         self.stage = stage
+
         # Add random postfix to logger ID to avoid conflicts
         self._logger_id = f"{logger_id}_{np.random.randint(10000)}"
         rr.init(self._logger_id, spawn=True)
+        if save_path is not None:
+            # Ensure directory exists
+            save_path.parent.mkdir(parents=True, exist_ok=True)
+            rr.save(save_path)
         self._logged_meshes = set()  # Track which meshes we've already logged
         self._logged_paths = set()  # Track logged prim paths
 
@@ -54,6 +66,10 @@ class UsdRerunLogger:
         # Using Usd.TraverseInstanceProxies to traverse into instanceable prims (references)
         predicate = Usd.TraverseInstanceProxies(Usd.PrimDefaultPredicate)
         for prim in self.stage.Traverse(predicate):
+            # Skip guides
+            if prim.GetAttribute("purpose").Get() == UsdGeom.Tokens.guide:
+                continue
+
             entity_path = str(prim.GetPath())
             self._logged_paths.add(entity_path)
 
@@ -114,14 +130,14 @@ class UsdRerunLogger:
         face_vertex_counts_attr = mesh.GetFaceVertexCountsAttr()
 
         if not face_vertex_indices_attr or not face_vertex_counts_attr:
-            rr.log(entity_path, rr.Points3D(positions=vertices))
+            rr.log(entity_path, rr.Points3D(positions=vertices), static=True)
             return
 
         face_vertex_indices = np.array(face_vertex_indices_attr.Get())
         face_vertex_counts = np.array(face_vertex_counts_attr.Get())
 
         if face_vertex_indices is None or face_vertex_counts is None:
-            rr.log(entity_path, rr.Points3D(positions=vertices))
+            rr.log(entity_path, rr.Points3D(positions=vertices), static=True)
             return
 
         # --- Handle UVs ---
@@ -361,6 +377,7 @@ class UsdRerunLogger:
                 albedo_texture=texture_buffer,
                 albedo_factor=albedo_factor,
             ),
+            static=True,
         )
 
     def clear_logged_meshes(self):
@@ -532,6 +549,7 @@ class UsdRerunLogger:
                 colors=color,
                 fill_mode="solid",
             ),
+            static=True,
         )
 
 

@@ -257,12 +257,15 @@ class EnvironmentRunner:
         self.camera_manager.initialize()
         self.camera_manager.link_waypoint_mission(self.waypoint_mission)
 
-        self.rerun_logger.initialize(self.world.stage)
+        run_dir = OUTPUT_DIR / f"{self.current_scene.name}_{int(self.difficulty * 100)}"
+
+        self.rerun_logger.initialize(
+            self.world.stage, spawn=False, save_path=run_dir / "simulation.rrd"
+        )
 
         # TODO: find a better way to separate artefacts outputs per test run
         self.camera_manager.start_writers(
-            output_dir=OUTPUT_DIR
-            / f"{self.current_scene.name}_{int(self.difficulty * 100)}",
+            output_dir=run_dir,
         )
 
     def load_next_scene(self):
