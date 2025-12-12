@@ -1,10 +1,11 @@
 """Policy controller node."""
 
+import os
 from pathlib import Path
 
+import msgs
 from dora import Node
 
-import msgs
 from policy_controller.policy import Policy
 
 
@@ -12,9 +13,18 @@ def main():
     """Receive observations and twist commands and output joint commands."""
     node = Node()
 
+    default_policy_path = (
+        Path(__file__).resolve().parent.parent.parent.parent / "policies" / "complete"
+    )
+    # Try to read policy path from environment variable
+    policy_path_str = os.getenv("GO2_POLICY_PATH", str(default_policy_path))
+    policy_path = Path(policy_path_str)
+    if not policy_path.exists():
+        raise FileNotFoundError(f"Policy path not found at {policy_path}")
+
     policy = Policy(
-        model_path=Path(__file__).parent / "policy" / "policy.pt",
-        config_path=Path(__file__).parent / "policy" / "env.yaml",
+        model_path=policy_path / "policy.pt",
+        config_path=policy_path / "env.yaml",
     )
     control_timestep = policy.config.dt * policy.config.decimation
 
