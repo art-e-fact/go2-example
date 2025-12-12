@@ -74,7 +74,15 @@ def test_navigator_logic():
 
 
 def test_navigator_logic_stateful():
-    """Test if sends command output after every tick input."""
+    """Test the stateful logic of the navigator.
+
+    This test verifies that:
+    1. The navigator correctly processes inputs (robot_pose, waypoints) and maintains state.
+    2. It generates a 'command_2d' output for every 'tick' input.
+    3. The generated commands are correct based on the current robot pose and target waypoint:
+       - Moving straight when facing the target.
+       - Turning when not facing the target.
+    """
     # A queue to send events to the node
     event_queue = queue.Queue()
 
