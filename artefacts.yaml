@@ -1,4 +1,4 @@
-project: artefacts/go2-isaac-example
+project: artefacts-demos/go2-demo
 version: 0.1.0
 
 jobs:
