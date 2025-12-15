@@ -19,7 +19,7 @@ def test_receives_scene_info_on_startup(node):
 
 
 @pytest.mark.parametrize("difficulty", [0.1, 0.7, 1.1])
-@pytest.mark.clock_timeout(30)
+@pytest.mark.clock_timeout(15)
 def test_completes_waypoint_mission_with_variable_height_steps(node, difficulty: float):
     """Test that the waypoint mission completes successfully.
 
@@ -29,7 +29,7 @@ def test_completes_waypoint_mission_with_variable_height_steps(node, difficulty:
 
 
 @pytest.mark.parametrize("scene", ["rail_blocks", "stone_stairs", "excavator"])
-@pytest.mark.clock_timeout(50)
+@pytest.mark.clock_timeout(30)
 def test_completes_waypoint_mission_in_photo_realistic_env(node, scene: str):
     """Test that the waypoint mission completes successfully."""
     run_waypoint_mission_test(node, scene, difficulty=1.0)

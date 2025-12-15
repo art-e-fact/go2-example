@@ -35,8 +35,8 @@ jobs:
     scenarios:
       settings:
         - name: report_based_waypoint_mission_test
-          run: "uv run dataflow --test-waypoint-report"
+          run: "uv run dataflow --test-waypoint-poses --policy stumbling"
           
         - name: pose_based_waypoint_mission_test
-          run: "uv run dataflow --test-waypoint-poses"
+          run: "uv run dataflow --test-waypoint-poses --policy complete"
   
