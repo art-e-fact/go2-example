@@ -1,11 +1,13 @@
+import os
 from pathlib import Path
 
-import msgs
 import numpy as np
 from isaacsim.core.utils.rotations import quat_to_rot_matrix
 from isaacsim.core.utils.types import ArticulationAction
 from isaacsim.robot.policy.examples.controllers import PolicyController, config_loader
 from scipy.spatial.transform import Rotation
+
+import msgs
 
 from .height_scan import HeightScanGrid
 
@@ -39,13 +41,17 @@ class Go2Policy(PolicyController):
 
         super().__init__(name, prim_path, root_path, usd_path, position, orientation)
 
-        # TODO: load policy config from messages
-        policy_path = (
-            Path(__file__).resolve().parent.parent.parent
-            / "policy_controller"
-            / "policy_controller"
-            / "policy"
+        default_policy_path = (
+            Path(__file__).resolve().parent.parent.parent.parent
+            / "policies"
+            / "complete"
         )
+        # Try to read policy path from environment variable
+        policy_path_str = os.getenv("GO2_POLICY_PATH", str(default_policy_path))
+        policy_path = Path(policy_path_str)
+        if not policy_path.exists():
+            raise FileNotFoundError(f"Policy path not found at {policy_path}")
+
         env_path = policy_path / "env.yaml"
         if not env_path.exists():
             raise FileNotFoundError(f"Env config file not found at {env_path}")
