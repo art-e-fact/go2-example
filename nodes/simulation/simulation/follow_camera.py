@@ -18,7 +18,7 @@ class FollowCamera:
             orientation=rot_utils.euler_angles_to_quats(
                 np.array([0, 0, 0]), degrees=True
             ),
-            resolution=(1080 // 2, 720 // 2),
+            resolution=(1080, 720),
         )
         self.camera.set_focal_length(1.8)  # Same as the default perspective camera
         self.camera_location = np.array([0.0, 5.0, 2.0])

@@ -1,10 +1,12 @@
 import os
-import typer
+from pathlib import Path
+from typing import Optional
+
 import dora
+import typer
+from artefacts_toolkit.config import get_artefacts_params
 from dora.builder import DataflowBuilder
 from typing_extensions import Annotated
-from typing import Optional
-from pathlib import Path
 
 workspace_path = Path(__file__).parent.parent.parent.parent
 nodes_path = workspace_path / "nodes"
@@ -75,7 +77,7 @@ def run_dataflow(
             help=(
                 "Policy folder name inside 'policies' or absolute path. "
                 f"Available: {', '.join(available_policy_folders) if available_policy_folders else 'none detected'}. "
-                "Default: GO2_POLICY_PATH env or 'complete'."
+                "Default: GO2_POLICY_PATH env or 'baseline'."
             )
         ),
     ] = None,
@@ -104,7 +106,14 @@ def run_dataflow(
     if not policy:
         policy = os.getenv("GO2_POLICY_PATH")
         if not policy:
-            policy = "complete"
+            policy = "baseline"
+
+    # Use the policy set with Artefacts parameters if available
+    try:
+        policy = get_artefacts_params().get("policy", policy)
+    except Exception:
+        # Not executing within Artefacts context
+        pass
 
     if policy in available_policy_folders:
         policy = policies_folder / policy
@@ -151,10 +160,13 @@ def run_dataflow(
         policy_controller.add_input("command_2d", "navigator/command_2d")
 
         # Add the tester node
+        junit_xml_path = (
+            output_path / ".." / "tests_junit.xml"
+        )  # Save junit in the root outputs folder
         tester = dataflow.add_node(
             id="tester",
             path="pytest",
-            args=f"{nodes_path / 'tester/tester' / test} -s --junit-xml={str(output_path / 'tests_junit.xml')}",
+            args=f"{nodes_path / 'tester/tester' / test} -s --junit-xml={str(junit_xml_path)}",
         )
         tester.add_input("waypoints", "simulation/waypoints")
         tester.add_input("scene_info", "simulation/scene_info")
