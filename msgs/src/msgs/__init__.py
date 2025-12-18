@@ -81,11 +81,18 @@ class Observations(ArrowMessage):
     joint_positions: np.ndarray
     joint_velocities: np.ndarray
     height_scan: np.ndarray
+    observation_id: int
 
 
 @dataclass
 class JointCommands(ArrowMessage):
+    """Joint commands generated from a specific observation.
+
+    The `observation_id` matches the commands to the observations they were generated from.
+    """
+
     positions: np.ndarray
+    observation_id: int
 
 
 class WaypointStatus(ArrowMessage, Enum):

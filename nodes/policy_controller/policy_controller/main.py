@@ -55,7 +55,10 @@ def main():
             )
             node.send_output(
                 "joint_commands",
-                msgs.JointCommands(positions=joint_targets).to_arrow(),
+                msgs.JointCommands(
+                    positions=joint_targets,
+                    observation_id=last_observations.observation_id,
+                ).to_arrow(),
             )
         elif last_commands is not None:
             # Resend last commands
