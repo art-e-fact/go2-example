@@ -1,4 +1,7 @@
 # noqa: D100
+import os
+from pathlib import Path
+
 import msgs
 import pyarrow as pa
 import pytest
@@ -74,3 +77,27 @@ def node(request, session_node: TestNode):
         session_node.set_timeout(clock_timeout.args[0])
     yield session_node
     session_node.reset_timeout()
+
+
+@pytest.fixture(scope="session")
+def metrics():
+    """Collect test metrics during the test session."""
+    metrics = {}
+
+    yield metrics
+
+    workspace_path = Path(__file__).parent.parent.parent.parent
+    metrics_path = (
+        Path(
+            os.getenv(
+                "ARTEFACTS_SCENARIO_UPLOAD_DIR", workspace_path / "outputs/artefacts"
+            )
+        )
+        / ".."
+        / "metrics.json"
+    )
+    metrics_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(metrics_path, "w") as f:
+        import json
+
+        json.dump(metrics, f, indent=2)

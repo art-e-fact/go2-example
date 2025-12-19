@@ -20,22 +20,28 @@ def test_receives_scene_info_on_startup(node):
 
 @pytest.mark.parametrize("difficulty", [0.1, 0.7, 1.1])
 @pytest.mark.clock_timeout(30)
-def test_completes_waypoint_mission_with_variable_height_steps(node, difficulty: float):
+def test_completes_waypoint_mission_with_variable_height_steps(
+    node, difficulty: float, metrics: dict
+):
     """Test that the waypoint mission completes successfully.
 
     The pyramid steps height is configured via difficulty.
     """
-    run_waypoint_mission_test(node, scene="generated_pyramid", difficulty=difficulty)
+    run_waypoint_mission_test(
+        node, scene="generated_pyramid", difficulty=difficulty, metrics=metrics
+    )
 
 
 @pytest.mark.parametrize("scene", ["rail_blocks", "stone_stairs", "excavator"])
 @pytest.mark.clock_timeout(30)
-def test_completes_waypoint_mission_in_photo_realistic_env(node, scene: str):
+def test_completes_waypoint_mission_in_photo_realistic_env(
+    node, scene: str, metrics: dict
+):
     """Test that the waypoint mission completes successfully."""
-    run_waypoint_mission_test(node, scene, difficulty=1.0)
+    run_waypoint_mission_test(node, scene, difficulty=1.0, metrics=metrics)
 
 
-def run_waypoint_mission_test(node, scene: str, difficulty: float):
+def run_waypoint_mission_test(node, scene: str, difficulty: float, metrics: dict):
     """Run the waypoint mission test."""
     transforms = Transforms()
     node.send_output(
@@ -44,6 +50,10 @@ def run_waypoint_mission_test(node, scene: str, difficulty: float):
 
     waypoint_list: list[str] = []
     next_waypoint_index = 0
+
+    metrics_key = f"completion_time.{scene}_{difficulty}"
+    metrics[metrics_key] = "N/A"
+    start_time = time.time()
 
     for event in node:
         if event["type"] == "INPUT" and event["id"] == "waypoints":
@@ -95,3 +105,6 @@ def run_waypoint_mission_test(node, scene: str, difficulty: float):
                 else:
                     print("All waypoints completed!")
                     break
+
+    elapsed_time = time.time() - start_time
+    metrics[metrics_key] = elapsed_time
