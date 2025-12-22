@@ -32,6 +32,10 @@ class Timestamp(ArrowMessage):
     def float_seconds(self) -> float:
         return self.seconds + self.nanoseconds / 1e9
 
+    @property
+    def float_milliseconds(self) -> float:
+        return self.float_seconds * 1e3
+
 
 @dataclass
 class Transform(ArrowMessage):
