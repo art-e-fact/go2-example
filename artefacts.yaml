@@ -37,7 +37,8 @@ jobs:
         - name: pose_based_waypoint_mission_test
           params:
             policy:
-              - stumbling
               - baseline
+              - stumbling
+          metrics: metrics.json
           run: "uv run dataflow --test-waypoint-poses"
   
