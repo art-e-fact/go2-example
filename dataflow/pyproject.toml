@@ -14,6 +14,7 @@ dependencies = [
     "dora-rs-cli>=0.3.13",
     "typer>=0.20.0",
     "artefacts-toolkit>=0.7.1",
+    "pytest-custom-exit-code>=0.3.0",
 ]
 
 [project.scripts]

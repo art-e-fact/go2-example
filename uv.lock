@@ -533,6 +533,7 @@ dependencies = [
     { name = "msgs" },
     { name = "navigator" },
     { name = "policy-controller" },
+    { name = "pytest-custom-exit-code" },
     { name = "simulation" },
     { name = "teleop" },
     { name = "tester" },
@@ -551,6 +552,7 @@ requires-dist = [
     { name = "msgs", editable = "msgs" },
     { name = "navigator", editable = "nodes/navigator" },
     { name = "policy-controller", editable = "nodes/policy_controller" },
+    { name = "pytest-custom-exit-code", specifier = ">=0.3.0" },
     { name = "simulation", editable = "nodes/simulation" },
     { name = "teleop", editable = "nodes/teleop" },
     { name = "tester", editable = "nodes/tester" },
@@ -2127,6 +2129,18 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/a3/5c/00a0e072241553e1a7496d638deababa67c5058571567b92a7eaa258397c/pytest-8.4.2.tar.gz", hash = "sha256:86c0d0b93306b961d58d62a4db4879f27fe25513d4b969df351abdddb3c30e01", size = 1519618, upload-time = "2025-09-04T14:34:22.711Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/a8/a4/20da314d277121d6534b3a980b29035dcd51e6744bd79075a6ce8fa4eb8d/pytest-8.4.2-py3-none-any.whl", hash = "sha256:872f880de3fc3a5bdc88a11b39c9710c3497a547cfa9320bc3c5e62fbf272e79", size = 365750, upload-time = "2025-09-04T14:34:20.226Z" },
+]
+
+[[package]]
+name = "pytest-custom-exit-code"
+version = "0.3.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "pytest" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/92/9d/e1eb0af5e96a5c34f59b9aa69dfb680764420fe60f2ec28cfbc5339f99f8/pytest-custom_exit_code-0.3.0.tar.gz", hash = "sha256:51ffff0ee2c1ddcc1242e2ddb2a5fd02482717e33a2326ef330e3aa430244635", size = 3633, upload-time = "2019-08-07T09:45:15.781Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/35/a0/effb6cbbccfd1c106c572d3d619b3418d71093afb4cd4f91f51e6a1799d2/pytest_custom_exit_code-0.3.0-py3-none-any.whl", hash = "sha256:6e0ce6e57ce3a583cb7e5023f7d1021e19dfec22be41d9ad345bae2fc61caf3b", size = 4055, upload-time = "2019-08-07T09:45:13.767Z" },
 ]
 
 [[package]]
