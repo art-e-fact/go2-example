@@ -1,10 +1,9 @@
 """Dora node that test waypoint mission completions using the robot pose."""
 
-import time
-
 import msgs
 import pytest
 
+from tester.stuck_detector import StuckDetector
 from tester.transforms import Transforms
 
 
@@ -20,22 +19,28 @@ def test_receives_scene_info_on_startup(node):
 
 @pytest.mark.parametrize("difficulty", [0.1, 0.7, 1.1])
 @pytest.mark.clock_timeout(30)
-def test_completes_waypoint_mission_with_variable_height_steps(node, difficulty: float):
+def test_completes_waypoint_mission_with_variable_height_steps(
+    node, difficulty: float, metrics: dict
+):
     """Test that the waypoint mission completes successfully.
 
     The pyramid steps height is configured via difficulty.
     """
-    run_waypoint_mission_test(node, scene="generated_pyramid", difficulty=difficulty)
+    run_waypoint_mission_test(
+        node, scene="generated_pyramid", difficulty=difficulty, metrics=metrics
+    )
 
 
 @pytest.mark.parametrize("scene", ["rail_blocks", "stone_stairs", "excavator"])
 @pytest.mark.clock_timeout(30)
-def test_completes_waypoint_mission_in_photo_realistic_env(node, scene: str):
+def test_completes_waypoint_mission_in_photo_realistic_env(
+    node, scene: str, metrics: dict
+):
     """Test that the waypoint mission completes successfully."""
-    run_waypoint_mission_test(node, scene, difficulty=1.0)
+    run_waypoint_mission_test(node, scene, difficulty=1.0, metrics=metrics)
 
 
-def run_waypoint_mission_test(node, scene: str, difficulty: float):
+def run_waypoint_mission_test(node, scene: str, difficulty: float, metrics: dict):
     """Run the waypoint mission test."""
     transforms = Transforms()
     node.send_output(
@@ -45,7 +50,22 @@ def run_waypoint_mission_test(node, scene: str, difficulty: float):
     waypoint_list: list[str] = []
     next_waypoint_index = 0
 
+    metrics_key = f"completion_time.{scene}_{difficulty}"
+    start_time_ms = None
+    current_time_ms = None
+    stuck_detector = StuckDetector(max_no_progress_time=5000)  # 5 seconds
+
     for event in node:
+        if event["type"] == "INPUT" and event["id"] == "clock":
+            now = msgs.Timestamp.from_arrow(event["value"]).float_milliseconds
+            if start_time_ms is None or now < start_time_ms:
+                start_time_ms = now
+            current_time_ms = now
+
+        # Bail if we haven't started yet
+        if current_time_ms is None:
+            continue
+
         if event["type"] == "INPUT" and event["id"] == "waypoints":
             waypoint_list_msg = msgs.WaypointList.from_arrow(event["value"])
             waypoints = waypoint_list_msg.waypoints
@@ -60,7 +80,7 @@ def run_waypoint_mission_test(node, scene: str, difficulty: float):
 
                 transforms.add_transform(
                     wp.transform,
-                    int(time.time()),
+                    int(current_time_ms),
                     parent_frame="world",
                     child_frame=waypoint_frame,
                 )
@@ -71,7 +91,7 @@ def run_waypoint_mission_test(node, scene: str, difficulty: float):
                 continue
 
             transform = msgs.Transform.from_arrow(event["value"])
-            timestamp = int(time.time())
+            timestamp = int(current_time_ms)
             transforms.add_transform(
                 transform,
                 timestamp,
@@ -95,3 +115,13 @@ def run_waypoint_mission_test(node, scene: str, difficulty: float):
                 else:
                     print("All waypoints completed!")
                     break
+
+            if stuck_detector.step_is_stuck(transform, timestamp):
+                raise AssertionError(
+                    "Robot is stuck and cannot complete the waypoint mission."
+                )
+
+    if start_time_ms is not None and current_time_ms is not None:
+        elapsed_time_ms = current_time_ms - start_time_ms
+        # Convert to seconds
+        metrics[metrics_key] = elapsed_time_ms / 1000.0

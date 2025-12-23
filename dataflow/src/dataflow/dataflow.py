@@ -163,11 +163,21 @@ def run_dataflow(
         junit_xml_path = (
             output_path / ".." / "tests_junit.xml"
         )  # Save junit in the root outputs folder
+
         tester = dataflow.add_node(
             id="tester",
             path="pytest",
-            args=f"{nodes_path / 'tester/tester' / test} -s --junit-xml={str(junit_xml_path)}",
+            args=" ".join(
+                [
+                    f"{nodes_path / 'tester/tester' / test} -s",
+                    f"--junit-xml={str(junit_xml_path)}",
+                    # Avoid failing the dataflow on test failures
+                    # https://docs.pytest.org/en/stable/reference/exit-codes.html
+                    "--suppress-tests-failed-exit-code",
+                ]
+            ),
         )
+
         tester.add_input("waypoints", "simulation/waypoints")
         tester.add_input("scene_info", "simulation/scene_info")
         tester.add_input("robot_pose", "simulation/robot_pose")
