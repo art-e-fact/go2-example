@@ -1,19 +1,20 @@
-import time
 import os
+import time
 from dataclasses import dataclass, field
 from pathlib import Path
+
 import carb.input
 import numpy as np
 import omni.kit.commands
 from isaacsim import SimulationApp
 from isaacsim.core.api import World
+from isaacsim.core.prims import SingleXFormPrim
 from isaacsim.core.utils import stage as stage_utils
 from omni.isaac.core.utils.prims import get_prim_at_path
-from isaacsim.core.prims import SingleXFormPrim
 from pxr import Gf, Sdf, UsdGeom
+from usd_rerun_logger.usd_logger import UsdRerunLogger
 
 from simulation.camera_manager import CameraManager
-
 from simulation.environments.pyramid import create_stepped_pyramid
 from simulation.environments.rails import create_rails
 from simulation.follow_camera import FollowCamera
@@ -175,6 +176,8 @@ class EnvironmentRunner:
             window_size=200, update_interval=100
         )  # 1-second window for 200Hz, update every 100 steps
         self.log_rtf = False
+        self._simulation_time = 0.0
+        self.logger = None
 
     def initialize(self):
         self.world = World(
@@ -215,6 +218,7 @@ class EnvironmentRunner:
         self.world.reset()
         self.go2.reset()
         self.go2.initialize()
+        self._simulation_time = 0.0
 
         if demo_config.robot_position is not None:
             # Set the initial robot position in every possible way. I'm confuesed how the reset prcedure works in Isaac,
@@ -253,10 +257,15 @@ class EnvironmentRunner:
         self.camera_manager.link_waypoint_mission(self.waypoint_mission)
 
         # TODO: find a better way to separate artefacts outputs per test run
-        self.camera_manager.start_writers(
-            output_dir=OUTPUT_DIR
-            / f"{self.current_scene.name}_{int(self.difficulty * 100)}",
+        run_dir = OUTPUT_DIR / f"{self.current_scene.name}_{int(self.difficulty * 100)}"
+
+        self.logger = UsdRerunLogger(
+            self.world.stage,
+            save_path=str(run_dir / "simulation.rrd"),
+            application_id="go2-demo",
         )
+
+        self.camera_manager.start_writers(output_dir=run_dir)
 
     def load_next_scene(self):
         print("Loading next scene...")
@@ -283,6 +292,7 @@ class EnvironmentRunner:
         self.load_scene(self.current_scene)
 
     def on_physics_step(self, step_size) -> None:
+        self._simulation_time += step_size
         rtf = self._rtf_calculator.step(step_size)
         if rtf is not None and self.log_rtf:
             print(f"Real-Time Factor (RTF): {rtf:.2f}")
@@ -335,6 +345,8 @@ class EnvironmentRunner:
 
         # Prevent the RTF from going above 1.0 (faster than real-time)
         self.steady_rate.sleep()
+        if self.logger:
+            self.logger.log_stage()
 
     def get_rtf(self) -> float:
         return self._rtf_calculator.rtf
