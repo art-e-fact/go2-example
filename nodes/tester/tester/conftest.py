@@ -1,5 +1,4 @@
 # noqa: D100
-import os
 from pathlib import Path
 
 import msgs
@@ -87,16 +86,7 @@ def metrics():
     yield metrics
 
     workspace_path = Path(__file__).parent.parent.parent.parent
-    metrics_path = (
-        Path(
-            os.getenv(
-                "ARTEFACTS_SCENARIO_UPLOAD_DIR", workspace_path / "outputs/artefacts"
-            )
-        )
-        / ".."
-        / "metrics.json"
-    )
-    metrics_path.parent.mkdir(parents=True, exist_ok=True)
+    metrics_path = workspace_path / "metrics.json"
     with open(metrics_path, "w") as f:
         import json
 

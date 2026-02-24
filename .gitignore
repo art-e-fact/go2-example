@@ -5,3 +5,4 @@ out/
 __pycache__/
 *.egg
 *.egg-info
+metrics.json
