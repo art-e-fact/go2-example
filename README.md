@@ -38,7 +38,9 @@ See `uv run dataflow --help` for all options
 ## Testing with Artefacts
 
 ### Set up the Artefacts Dashboard
-Follow these steps to set up your Artefacts project. For more details, refer to the [documentation](https://docs.artefacts.com/getting-started/). 
+Follow these steps to set up your Artefacts project. For more details, refer to the [documentation](https://docs.artefacts.com/getting-started/).
+
+_Please note IsaacSim 5.0 is dependant on an older version of `psutil` (5.9.8) that is incompatible with Artefacts. As a result Artefacts needs to be installed outside the `uv` environment of the project. Our recommendation is `pipx`._
 
 1. Install the CLI using `pipx` (other installation methods are available).
 ```sh
