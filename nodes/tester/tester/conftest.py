@@ -1,5 +1,4 @@
 # noqa: D100
-import os
 from pathlib import Path
 
 import msgs
