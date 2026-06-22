@@ -1447,7 +1447,7 @@ dependencies = [
 ]
 
 [package.metadata]
-requires-dist = [{ name = "pyarrow-message", git = "https://github.com/Hennzau/arrow-message.git?subdirectory=crates%2Farrow-message-python&rev=de18e2a" }]
+requires-dist = [{ name = "pyarrow-message" }]
 
 [[package]]
 name = "multidict"
@@ -2028,11 +2028,32 @@ wheels = [
 
 [[package]]
 name = "pyarrow-message"
-version = "0.1.6"
-source = { git = "https://github.com/Hennzau/arrow-message.git?subdirectory=crates%2Farrow-message-python&rev=de18e2a#de18e2a59bbb0f5a55fc29705976a4150672f06d" }
+version = "0.1.5"
+source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "numpy" },
     { name = "pyarrow" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/cb/fb/d70bb413fe012aad34e2813eb31bfcc5bc9d0d44715bd5ab00991b696187/pyarrow_message-0.1.5.tar.gz", hash = "sha256:a441485f69b787611257d9e990ba5a3b75bebdbfad2de6a32d52b5355b5e422c", size = 18870, upload-time = "2025-03-26T17:42:10.319Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/16/21/f96c66c580295c74d5ec60556102abe8ca146b20bf130b6c11fd2717509e/pyarrow_message-0.1.5-cp311-cp311-macosx_10_12_x86_64.whl", hash = "sha256:ce172784b5371c77d1c870198f299f87ab50becea164c0161b200dd538e6f93d", size = 306798, upload-time = "2025-03-26T17:41:13.251Z" },
+    { url = "https://files.pythonhosted.org/packages/56/cf/891b550eaa50bdc58de35a1158cef0ca63989c448a97a7c96755c1b6e4c8/pyarrow_message-0.1.5-cp311-cp311-macosx_11_0_arm64.whl", hash = "sha256:fde479bc7e884a22d5fd16f532756f5e3449b6e03ed4a524c9dc9af8411efe1b", size = 300460, upload-time = "2025-03-26T17:41:09.519Z" },
+    { url = "https://files.pythonhosted.org/packages/78/9b/6f9c2f369056c10781ddbe4ad9f3030202cfb5a477c84ad37e9a1dff3bf3/pyarrow_message-0.1.5-cp311-cp311-manylinux_2_28_aarch64.whl", hash = "sha256:c407a6db66682d36fff7de1c8f4f9f3860f360e52414d1e9fd71ffc27373c70f", size = 333052, upload-time = "2025-03-26T17:40:25.12Z" },
+    { url = "https://files.pythonhosted.org/packages/54/b5/bddc31639e19b703105c5504674f5f527ecec432c7a551c83481170eba9b/pyarrow_message-0.1.5-cp311-cp311-manylinux_2_28_armv7l.whl", hash = "sha256:126955660f5cd0f224698672aeb52df5240a4b088d6a8eeaf54fdf51619d4a8a", size = 286616, upload-time = "2025-03-26T17:40:39.311Z" },
+    { url = "https://files.pythonhosted.org/packages/70/5e/e273a832a426a66680e5f0d7fb232c1eb3ce979b003deda5a16600325c4a/pyarrow_message-0.1.5-cp311-cp311-manylinux_2_28_i686.whl", hash = "sha256:2bc20083b77fb7ab02957eba2bb386bb0246385071737b9ea84be7295205f84a", size = 375023, upload-time = "2025-03-26T17:40:54.062Z" },
+    { url = "https://files.pythonhosted.org/packages/ff/09/bf137de51e444d189f285621cce7bd63175b8767ecc1adce0b882b319d12/pyarrow_message-0.1.5-cp311-cp311-musllinux_1_2_aarch64.whl", hash = "sha256:3d9f95bf6f5f9df2a6bbc8b14f37559ccc85fb22e65e7187418ee373ce1be404", size = 520528, upload-time = "2025-03-26T17:41:18.591Z" },
+    { url = "https://files.pythonhosted.org/packages/9e/60/6f726867e6c60225b93cc81fe54b797373103c62e537440e267b6af058d6/pyarrow_message-0.1.5-cp311-cp311-musllinux_1_2_armv7l.whl", hash = "sha256:7d3e0211af63e29aee066d3bb396b37fa8903726407ca2ba34f0c24fe997e09c", size = 609653, upload-time = "2025-03-26T17:41:30.718Z" },
+    { url = "https://files.pythonhosted.org/packages/24/ec/91b5d81ef688d3b3388ca702b82149dff9a61a907888bd8439102f130ebc/pyarrow_message-0.1.5-cp311-cp311-musllinux_1_2_i686.whl", hash = "sha256:0d3c75a8db2a1f19b2580f953944da1beeaa67e4d0c64c20eeb61f146da82d5f", size = 539567, upload-time = "2025-03-26T17:41:44.131Z" },
+    { url = "https://files.pythonhosted.org/packages/c6/83/72906f9e43e857dfc769e5c7c0132440fff4bae9a585505791a040456ff4/pyarrow_message-0.1.5-cp311-cp311-musllinux_1_2_x86_64.whl", hash = "sha256:2069b568ec46915a4370b9d493d8efc4ae4f32d67b97c8432ca54efad018aaec", size = 514241, upload-time = "2025-03-26T17:41:57.539Z" },
+    { url = "https://files.pythonhosted.org/packages/07/ad/b84e876898c0d199c18e41197a5ded8fdce62e9017b1e8b5acbfbc00d6f4/pyarrow_message-0.1.5-cp311-cp311-win32.whl", hash = "sha256:1c712d7900b4237bfaa06a106148d8bdcafa4be7d73f5db1d8a0551d6823b2d0", size = 180579, upload-time = "2025-03-26T17:42:20.603Z" },
+    { url = "https://files.pythonhosted.org/packages/21/f6/53e0adf05a1fa7d8c96d32cfd8eaaf8e4c2297348c59da730cabc7ac6097/pyarrow_message-0.1.5-cp311-cp311-win_amd64.whl", hash = "sha256:a219d8e2899df4631e0359757363df8e67443071d79114330155e5b2fc15513e", size = 189755, upload-time = "2025-03-26T17:42:12.346Z" },
+    { url = "https://files.pythonhosted.org/packages/04/ea/40555447ccc46778a636f1bb12d4a3964c1590448177880766b61462d3ae/pyarrow_message-0.1.5-pp311-pypy311_pp73-manylinux_2_28_aarch64.whl", hash = "sha256:ae7ee364d141615a461585f82620ddeb5d73f0ece517a802cfc4d9ace1e122e4", size = 333456, upload-time = "2025-03-26T17:40:34.607Z" },
+    { url = "https://files.pythonhosted.org/packages/e1/7d/b7cf0f5662d0ffacf67938d5fe50e56057a715f01986a6a8f6fa09268885/pyarrow_message-0.1.5-pp311-pypy311_pp73-manylinux_2_28_armv7l.whl", hash = "sha256:eace2406980c937ebf8a4173dee00efcfa91e2348ef533bb8b4ddf71882a21c9", size = 287356, upload-time = "2025-03-26T17:40:49.912Z" },
+    { url = "https://files.pythonhosted.org/packages/9a/60/e98099b15e40bcb9ba638067b6097fb6a16799f79f77d116f6dc95b7420b/pyarrow_message-0.1.5-pp311-pypy311_pp73-manylinux_2_28_i686.whl", hash = "sha256:cd3232bd131a84f1d171a595afaf2a06ef592b5ab291996177e62622f9cf1c8b", size = 375335, upload-time = "2025-03-26T17:41:04.787Z" },
+    { url = "https://files.pythonhosted.org/packages/c1/1c/8e3c2ca2b6c6c76bb6a820a8c218f21dd5aa3cfca70f23b6ffaf413aa0f4/pyarrow_message-0.1.5-pp311-pypy311_pp73-musllinux_1_2_aarch64.whl", hash = "sha256:bf5b13be7b718154687b92e4bbda4bbd478a5b19853ebae0995427e1692c4841", size = 521154, upload-time = "2025-03-26T17:41:27.04Z" },
+    { url = "https://files.pythonhosted.org/packages/09/bd/bdbdb6b2e179b28aaad81060005fb00a6aa24f46ab83f57b96419eff9bdf/pyarrow_message-0.1.5-pp311-pypy311_pp73-musllinux_1_2_armv7l.whl", hash = "sha256:8bbce0099bd2e278e1469525334fec3276aee90afcbd2d6011683f42a530e3d5", size = 611329, upload-time = "2025-03-26T17:41:40.297Z" },
+    { url = "https://files.pythonhosted.org/packages/f3/cb/f2a4f6df5f3e7932005adb5916512bc5e31d2c95494da4cf75f1908a4f37/pyarrow_message-0.1.5-pp311-pypy311_pp73-musllinux_1_2_i686.whl", hash = "sha256:0ade9247fdf870ad4a2923771195fb8edff32ea307fb2aff1ef9360818229609", size = 540320, upload-time = "2025-03-26T17:41:52.965Z" },
+    { url = "https://files.pythonhosted.org/packages/2a/99/72362051a551fad8b80166c252a492d6325a6a54e89cb220fda37a62695d/pyarrow_message-0.1.5-pp311-pypy311_pp73-musllinux_1_2_x86_64.whl", hash = "sha256:d84ce66645caf553d03c605dabd3bbfcca0445e7d1a2bc1f7b58504ee28410a0", size = 514871, upload-time = "2025-03-26T17:42:07.685Z" },
 ]
 
 [[package]]
@@ -2830,9 +2851,9 @@ dependencies = [
     { name = "typing-extensions" },
 ]
 wheels = [
-    { url = "https://download.pytorch.org/whl/cu128/torch-2.7.0%2Bcu128-cp311-cp311-manylinux_2_28_aarch64.whl", hash = "sha256:47c895bcab508769d129d717a4b916b10225ae3855723aeec8dff8efe5346207" },
-    { url = "https://download.pytorch.org/whl/cu128/torch-2.7.0%2Bcu128-cp311-cp311-manylinux_2_28_x86_64.whl", hash = "sha256:c4bbc0b4be60319ba1cefc90be9557b317f0b3c261eeceb96ca6e0343eec56bf" },
-    { url = "https://download.pytorch.org/whl/cu128/torch-2.7.0%2Bcu128-cp311-cp311-win_amd64.whl", hash = "sha256:bf88f647d76d79da9556ca55df49e45aff1d66c12797886364343179dd09a36c" },
+    { url = "https://download-r2.pytorch.org/whl/cu128/torch-2.7.0%2Bcu128-cp311-cp311-manylinux_2_28_aarch64.whl", hash = "sha256:47c895bcab508769d129d717a4b916b10225ae3855723aeec8dff8efe5346207", upload-time = "2025-05-14T03:35:36Z" },
+    { url = "https://download-r2.pytorch.org/whl/cu128/torch-2.7.0%2Bcu128-cp311-cp311-manylinux_2_28_x86_64.whl", hash = "sha256:c4bbc0b4be60319ba1cefc90be9557b317f0b3c261eeceb96ca6e0343eec56bf", upload-time = "2025-04-22T18:20:00Z" },
+    { url = "https://download-r2.pytorch.org/whl/cu128/torch-2.7.0%2Bcu128-cp311-cp311-win_amd64.whl", hash = "sha256:bf88f647d76d79da9556ca55df49e45aff1d66c12797886364343179dd09a36c", upload-time = "2025-04-22T18:20:15Z" },
 ]
 
 [[package]]

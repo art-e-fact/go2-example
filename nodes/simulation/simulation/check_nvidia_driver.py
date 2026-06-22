@@ -2,18 +2,19 @@ import subprocess
 
 
 def check_nvidia_driver():
-    required_version = "570"
+    supported_versions = ["570", "580"]
     try:
         version = subprocess.check_output(
             ["nvidia-smi", "--query-gpu=driver_version", "--format=csv,noheader"],
             text=True,
         ).strip()
-        if not version.startswith(required_version):
+        if not any(version.startswith(v) for v in supported_versions):
             yellow = "\033[93m"
             red = "\033[91m"
             reset = "\033[0m"
+            expected = " or ".join(f"{v}.x" for v in supported_versions)
             print(
-                f"{yellow}Warning: NVIDIA driver version is {red}{version}{yellow}, expected {required_version}.x{reset}"
+                f"{yellow}Warning: NVIDIA driver version is {red}{version}{yellow}, expected {expected}{reset}"
             )
             print(
                 "For more info, see: https://docs.omniverse.nvidia.com/dev-guide/latest/common/technical-requirements.html"

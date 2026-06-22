@@ -160,9 +160,7 @@ def run_dataflow(
         policy_controller.add_input("command_2d", "navigator/command_2d")
 
         # Add the tester node
-        junit_xml_path = (
-            output_path / ".." / "tests_junit.xml"
-        )  # Save junit in the root outputs folder
+        junit_xml_path = output_path / "tests_junit.xml"
 
         tester = dataflow.add_node(
             id="tester",
