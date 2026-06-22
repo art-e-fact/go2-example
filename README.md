@@ -5,7 +5,7 @@ This project demonstrates testing waypoint mission execution with a Unitree Go2 
 <img width="3716" height="2100" alt="go2-example-scenes" src="https://github.com/user-attachments/assets/212c96c9-bbe3-42e5-9a3a-7e28ee00b5f0" />
 
 ## Prerequisites
-- Isaac Sim 5.0 compatible [hardware](https://docs.isaacsim.omniverse.nvidia.com/latest/installation/requirements.html) and [drivers](https://docs.omniverse.nvidia.com/dev-guide/latest/common/technical-requirements.html)
+- Isaac Sim 5.0 compatible [hardware](https://docs.isaacsim.omniverse.nvidia.com/latest/installation/requirements.html) and [drivers](https://docs.omniverse.nvidia.com/dev-guide/latest/common/technical-requirements.html). `570.x` and `580.x` tested and working. Failed on `595.x`
 - [`uv` package manager](https://docs.astral.sh/uv/getting-started/installation/) (Not mandatory, but the instructions below use `uv`)
 - [Git LFS](https://docs.github.com/en/repositories/working-with-files/managing-large-files/installing-git-large-file-storage) 
 
