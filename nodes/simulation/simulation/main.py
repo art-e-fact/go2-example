@@ -1,11 +1,12 @@
 """TODO: Add docstring."""
 
+from collections import deque
 from enum import Enum
 
-import msgs
 import pyarrow as pa
 from dora import Node
 
+import msgs
 from simulation.check_nvidia_driver import check_nvidia_driver
 from simulation.scene_config import Scene
 from simulation.simulation_time_output import SimulationTimeOutput
@@ -37,9 +38,13 @@ def simulation():
     # Publish simulation time at each physics step
     _simulation_time_output = SimulationTimeOutput(node, runner.world)
 
+    # keep only the last 100 observation IDs
+    observation_id_sequence = deque(maxlen=100)
+
     # Publish observations at each physics step
     def on_physics_step(dt: float):
         observations = runner.go2.compute_observations()
+        observation_id_sequence.append(observations.observation_id)
         node.send_output("observations", observations.to_arrow())
 
     runner.world.add_physics_callback("observation_output", on_physics_step)
@@ -64,6 +69,11 @@ def simulation():
 
             elif event["id"] == "joint_commands":
                 joint_commands = msgs.JointCommands.from_arrow(event["value"])
+                # Compute how many physics steps have passed since the observation was made
+                observation_delay = len(
+                    observation_id_sequence
+                ) - observation_id_sequence.index(joint_commands.observation_id)
+                node.send_output("reaction_frame_delay", pa.array([observation_delay]))
                 runner.go2.set_target_positions(joint_commands.positions)
 
             elif event["id"] == "pub_status_tick":

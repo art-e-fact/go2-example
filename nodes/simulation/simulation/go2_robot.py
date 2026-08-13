@@ -109,6 +109,8 @@ class Go2Policy(PolicyController):
             joint_positions=self.robot.get_joint_positions(),
             joint_velocities=self.robot.get_joint_velocities(),
             height_scan=self.height_scan_grid.get_height_data(),
+            # Generate a random observation id
+            observation_id=np.random.randint(0, 2**16 - 1),
         )
 
     def _report_all_hits(self, hit_info):
