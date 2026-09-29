@@ -22,7 +22,7 @@ jobs:
           enable-cache: true
 
       - name: Run ruff check
-        run: uvx ruff check .
+        run: uvx ruff@0.14.5 check .
 
       - name: Run ruff format check
-        run: uvx ruff format . --check
+        run: uvx ruff@0.14.5 format . --check
