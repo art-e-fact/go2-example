@@ -2,6 +2,8 @@
 name = "go2-example"
 version = "0.1.0"
 requires-python = ">=3.11,<3.12"
+license = "MIT OR Apache-2.0"
+license-files = ["LICENSE-*"]
 dependencies = [
     "msgs",
     "simulation",
